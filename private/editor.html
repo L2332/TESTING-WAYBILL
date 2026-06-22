@@ -4027,6 +4027,7 @@ function scoreAddressConfidence(w){
   const reasons = [];
 
   if(buyerLine.length >= 8){ score += 25; } else { reasons.push("kulang buyer address/name"); }
+  
   function validLocationField(value, fieldName){
     value = cleanPdfText(value || "");
     if(value.length < 3){
@@ -4037,6 +4038,15 @@ function scoreAddressConfidence(w){
       reasons.push(fieldName + " only 1-2 letters");
       return false;
     }
+
+    // --- BAGONG RULE PARA SA NORTH AT (CAPITAL) ---
+    const lowerVal = value.toLowerCase();
+    if(fieldName === "City/Municipality" && (lowerVal === "north" || lowerVal === "south" || lowerVal === "east" || lowerVal === "west" || lowerVal === "(capital)" || lowerVal === "capital")){
+      reasons.push("invalid city ('" + value + "')");
+      return false;
+    }
+    // ----------------------------------------------
+
     return true;
   }
 
