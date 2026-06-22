@@ -5202,4 +5202,664 @@ async function downloadAllExtractedWaybills(){
       return r;
     };
   }
-});
+
+  const oldApplySelectedPdfWaybill = window.applySelectedPdfWaybill;
+  if(typeof oldApplySelectedPdfWaybill === "function"){
+    window.applySelectedPdfWaybill = function(){
+      const r = oldApplySelectedPdfWaybill.apply(this, arguments);
+      runSantaMarcelaFixSoon();
+      return r;
+    };
+  }
+
+  document.addEventListener("input", function(e){
+    if(e.target && /^p_buyer/.test(e.target.id || "")){
+      runSantaMarcelaFixSoon();
+    }
+  });
+})();
+</script>
+
+
+<script>
+(function(){
+  function cleanKeepAddress(s){
+    return String(s || "").replace(/\s+/g, " ").trim();
+  }
+
+  window.keepSellerAddressNotDeleted = function(beforeText){
+    const sellerLineEl = document.getElementById("p_sellerLine1");
+    if(!sellerLineEl) return;
+
+    const before = cleanKeepAddress(beforeText || "");
+    const after = cleanKeepAddress(sellerLineEl.textContent || "");
+
+    if(before && (!after || (before.length > after.length + 8 && /^(Baclaran|Barangay\s+\d+|Santa Marcela|Tondo)$/i.test(after)))){
+      sellerLineEl.textContent = before;
+    }
+  };
+
+  function wrapWithSellerAddressKeep(fnName){
+    const oldFn = window[fnName];
+    if(typeof oldFn !== "function" || oldFn.__keepSellerAddressWrapped) return;
+
+    const wrapped = function(){
+      const sellerLineEl = document.getElementById("p_sellerLine1");
+      const before = sellerLineEl ? sellerLineEl.textContent : "";
+      const result = oldFn.apply(this, arguments);
+      setTimeout(() => window.keepSellerAddressNotDeleted(before), 80);
+      setTimeout(() => window.keepSellerAddressNotDeleted(before), 300);
+      return result;
+    };
+    wrapped.__keepSellerAddressWrapped = true;
+    window[fnName] = wrapped;
+  }
+
+  wrapWithSellerAddressKeep("applySellerCityAddressZipFix");
+  wrapWithSellerAddressKeep("applyPSGCToSeller");
+  wrapWithSellerAddressKeep("applyWaybillData");
+  wrapWithSellerAddressKeep("applySelectedPdfWaybill");
+})();
+</script>
+
+
+<script>
+(function(){
+  function cleanSellerLinePreserve(s){
+    return String(s || "").replace(/\s+/g, " ").trim();
+  }
+
+  function shouldRestoreSellerAddress(before, after){
+    before = cleanSellerLinePreserve(before);
+    after = cleanSellerLinePreserve(after);
+
+    if(!before) return false;
+    if(!after) return true;
+
+    const beforeLooksFull = /\b(?:Metro Manila|Paranaque|Parañaque|City|Barangay|Brgy|Street|Road|\d{4})\b/i.test(before);
+    const afterLooksShort = /^(Baclaran|Tondo|Santa Marcela|Barangay\s+\d+)$/i.test(after);
+
+    if(beforeLooksFull && afterLooksShort) return true;
+    if(before.length >= 18 && after.length < before.length * 0.55) return true;
+
+    return false;
+  }
+
+  function restoreSellerAddressLine(before){
+    const el = document.getElementById("p_sellerLine1");
+    if(!el) return;
+    const after = el.textContent || "";
+    if(shouldRestoreSellerAddress(before, after)){
+      el.textContent = before;
+    }
+  }
+
+  function wrapPreserveFullSellerAddress(fnName){
+    const oldFn = window[fnName];
+    if(typeof oldFn !== "function" || oldFn.__preserveFullSellerAddress) return;
+
+    const wrapped = function(){
+      const el = document.getElementById("p_sellerLine1");
+      const before = el ? cleanSellerLinePreserve(el.textContent) : "";
+      const result = oldFn.apply(this, arguments);
+      setTimeout(function(){ restoreSellerAddressLine(before); }, 50);
+      setTimeout(function(){ restoreSellerAddressLine(before); }, 200);
+      setTimeout(function(){ restoreSellerAddressLine(before); }, 600);
+      return result;
+    };
+
+    wrapped.__preserveFullSellerAddress = true;
+    window[fnName] = wrapped;
+  }
+
+  function installPreserveWrappers(){
+    wrapPreserveFullSellerAddress("applySellerCityAddressZipFix");
+    wrapPreserveFullSellerAddress("applyPSGCToSeller");
+    wrapPreserveFullSellerAddress("lookupSellerAddressPSGC");
+    wrapPreserveFullSellerAddress("applySellerTondoCityFix");
+    wrapPreserveFullSellerAddress("applyExactSellerLocationFix");
+    wrapPreserveFullSellerAddress("fixSellerLocationFromCurrentText");
+    wrapPreserveFullSellerAddress("applyWaybillData");
+    wrapPreserveFullSellerAddress("applySelectedPdfWaybill");
+  }
+
+  installPreserveWrappers();
+  setTimeout(installPreserveWrappers, 500);
+  setTimeout(installPreserveWrappers, 1500);
+})();
+</script>
+
+
+<script>
+(function(){
+  function normalizeSellerAddressLine(s){
+    s = String(s || "").replace(/\s+/g, " ").trim();
+
+    // Fix repeated same area words like:
+    // "Baclaran Baclaran Baclaran..." -> "Baclaran"
+    const words = s.split(" ").filter(Boolean);
+    if(words.length >= 3){
+      const unique = [...new Set(words.map(w => w.toLowerCase()))];
+      if(unique.length === 1){
+        return words[0];
+      }
+    }
+
+    // Collapse repeated Baclaran even when mixed with other text.
+    s = s.replace(/\b(Baclaran)(?:\s+\1\b)+/gi, "$1");
+
+    // Collapse repeated common barangay/area phrase.
+    s = s.replace(/\b(Santa Marcela)(?:\s+\1\b)+/gi, "$1");
+    s = s.replace(/\b(Tondo)(?:\s+\1\b)+/gi, "$1");
+
+    return s.replace(/\s+/g, " ").trim();
+  }
+
+  window.fixRepeatedSellerAddressWords = function(){
+    const sellerLineEl = document.getElementById("p_sellerLine1");
+    if(!sellerLineEl) return;
+
+    const current = sellerLineEl.textContent || "";
+    const fixed = normalizeSellerAddressLine(current);
+
+    if(fixed && fixed !== current.trim()){
+      sellerLineEl.textContent = fixed;
+    }
+  };
+
+  function runRepeatedSellerFixSoon(){
+    setTimeout(window.fixRepeatedSellerAddressWords, 80);
+    setTimeout(window.fixRepeatedSellerAddressWords, 250);
+    setTimeout(window.fixRepeatedSellerAddressWords, 700);
+  }
+
+  const oldApplySellerCityAddressZipFix = window.applySellerCityAddressZipFix;
+  if(typeof oldApplySellerCityAddressZipFix === "function"){
+    window.applySellerCityAddressZipFix = function(){
+      const r = oldApplySellerCityAddressZipFix.apply(this, arguments);
+      runRepeatedSellerFixSoon();
+      return r;
+    };
+  }
+
+  const oldApplyPSGCToSeller = window.applyPSGCToSeller;
+  if(typeof oldApplyPSGCToSeller === "function"){
+    window.applyPSGCToSeller = function(){
+      const r = oldApplyPSGCToSeller.apply(this, arguments);
+      runRepeatedSellerFixSoon();
+      return r;
+    };
+  }
+
+  const oldApplyWaybillData = window.applyWaybillData;
+  if(typeof oldApplyWaybillData === "function"){
+    window.applyWaybillData = function(){
+      const r = oldApplyWaybillData.apply(this, arguments);
+      runRepeatedSellerFixSoon();
+      return r;
+    };
+  }
+
+  const oldApplySelectedPdfWaybill = window.applySelectedPdfWaybill;
+  if(typeof oldApplySelectedPdfWaybill === "function"){
+    window.applySelectedPdfWaybill = function(){
+      const r = oldApplySelectedPdfWaybill.apply(this, arguments);
+      runRepeatedSellerFixSoon();
+      return r;
+    };
+  }
+
+  document.addEventListener("input", function(e){
+    if(e.target && e.target.id === "p_sellerLine1"){
+      runRepeatedSellerFixSoon();
+    }
+  });
+})();
+</script>
+
+
+<script>
+(function(){
+  function getSellerConfirmText(id){
+    const el = document.getElementById(id);
+    return el ? String(el.textContent || "").trim() : "";
+  }
+
+  function setSellerConfirmText(id, value){
+    const el = document.getElementById(id);
+    if(el) el.textContent = String(value || "").trim();
+  }
+
+  window.confirmSellerAddress = function(){
+    const current = {
+      name: getSellerConfirmText("p_sellerName"),
+      address: getSellerConfirmText("p_sellerLine1"),
+      city: getSellerConfirmText("p_sellerCity"),
+      area: getSellerConfirmText("p_sellerArea"),
+      province: getSellerConfirmText("p_sellerProvince"),
+      region: getSellerConfirmText("p_sellerRegion"),
+      zip: getSellerConfirmText("p_sellerZip")
+    };
+
+    const msg =
+      "Confirm / edit seller address fields:\n\n" +
+      "Seller Name / Phone:\n" + current.name + "\n\n" +
+      "Seller Address:\n" + current.address + "\n\n" +
+      "City:\n" + current.city + "\n\n" +
+      "Barangay / Area:\n" + current.area + "\n\n" +
+      "Province:\n" + current.province + "\n\n" +
+      "Region/Country:\n" + current.region + "\n\n" +
+      "ZIP:\n" + current.zip + "\n\n" +
+      "Press OK to edit step-by-step, or Cancel to keep as-is.";
+
+    if(!confirm(msg)) return;
+
+    const name = prompt("Seller Name / Phone:", current.name);
+    if(name !== null) setSellerConfirmText("p_sellerName", name);
+
+    const address = prompt("Seller Address:", current.address);
+    if(address !== null) setSellerConfirmText("p_sellerLine1", address);
+
+    const city = prompt("Seller City:", current.city);
+    if(city !== null) setSellerConfirmText("p_sellerCity", city);
+
+    const area = prompt("Seller Barangay / Area:", current.area);
+    if(area !== null) setSellerConfirmText("p_sellerArea", area);
+
+    const province = prompt("Seller Province:", current.province);
+    if(province !== null) setSellerConfirmText("p_sellerProvince", province);
+
+    const region = prompt("Seller Region/Country:", current.region);
+    if(region !== null) setSellerConfirmText("p_sellerRegion", region);
+
+    const zip = prompt("Seller ZIP:", current.zip);
+    if(zip !== null) setSellerConfirmText("p_sellerZip", zip);
+
+    const btn = document.getElementById("confirmSellerAddressBtn");
+    if(btn){
+      btn.textContent = "SELLER ADDRESS CONFIRMED";
+      btn.classList.add("seller-confirm-ok");
+    }
+  };
+
+  function addSellerConfirmButton(){
+    if(typeof window.placeSellerConfirmInsideActionCells === "function") window.placeSellerConfirmInsideActionCells();
+  }
+
+  function resetSellerConfirmButton(){
+    const btn = document.getElementById("confirmSellerAddressBtn");
+    if(btn){
+      btn.textContent = "CONFIRM SELLER ADDRESS";
+      btn.classList.remove("seller-confirm-ok");
+    }
+  }
+
+  if(document.readyState === "loading"){
+    document.addEventListener("DOMContentLoaded", addSellerConfirmButton);
+  }else{
+    addSellerConfirmButton();
+  }
+
+  const oldApplyWaybillData = window.applyWaybillData;
+  if(typeof oldApplyWaybillData === "function"){
+    window.applyWaybillData = function(){
+      const r = oldApplyWaybillData.apply(this, arguments);
+      setTimeout(addSellerConfirmButton, 100);
+      setTimeout(resetSellerConfirmButton, 150);
+      return r;
+    };
+  }
+
+  const oldApplySelectedPdfWaybill = window.applySelectedPdfWaybill;
+  if(typeof oldApplySelectedPdfWaybill === "function"){
+    window.applySelectedPdfWaybill = function(){
+      const r = oldApplySelectedPdfWaybill.apply(this, arguments);
+      setTimeout(addSellerConfirmButton, 100);
+      setTimeout(resetSellerConfirmButton, 150);
+      return r;
+    };
+  }
+})();
+</script>
+
+
+<script>
+(function(){
+  function makeSellerRowButton(){
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "sellerConfirmBtn sellerConfirmRowBtn";
+    btn.textContent = "CONFIRM SELLER ADDRESS";
+    btn.onclick = function(e){
+      e.preventDefault();
+      e.stopPropagation();
+      if(typeof window.confirmSellerAddress === "function"){
+        window.confirmSellerAddress();
+      }
+    };
+    return btn;
+  }
+
+  function removeOutsideSellerConfirmButton(){
+    const btn = document.getElementById("confirmSellerAddressBtn");
+    if(btn && !btn.closest("td")){
+      btn.remove();
+    }
+  }
+
+  window.placeSellerConfirmInsideActionCells = function(){
+    removeOutsideSellerConfirmButton();
+
+    const buttons = Array.from(document.querySelectorAll("button"));
+    buttons.forEach(function(buyerBtn){
+      const text = (buyerBtn.textContent || "").trim();
+      if(!/CONFIRM\s+(BUYER\s+)?ADDRESS/i.test(text)) return;
+      if(/SELLER/i.test(text)) return;
+
+      const cell = buyerBtn.closest("td") || buyerBtn.parentElement;
+      if(!cell) return;
+      if(cell.querySelector(".sellerConfirmRowBtn")) return;
+
+      const sellerBtn = makeSellerRowButton();
+      buyerBtn.insertAdjacentElement("afterend", sellerBtn);
+    });
+  };
+
+  function runPlaceSellerConfirm(){
+    setTimeout(window.placeSellerConfirmInsideActionCells, 50);
+    setTimeout(window.placeSellerConfirmInsideActionCells, 250);
+    setTimeout(window.placeSellerConfirmInsideActionCells, 800);
+  }
+
+  runPlaceSellerConfirm();
+
+  const oldApplyWaybillData2 = window.applyWaybillData;
+  if(typeof oldApplyWaybillData2 === "function" && !oldApplyWaybillData2.__sellerConfirmInsideWrapped){
+    const wrapped = function(){
+      const r = oldApplyWaybillData2.apply(this, arguments);
+      runPlaceSellerConfirm();
+      return r;
+    };
+    wrapped.__sellerConfirmInsideWrapped = true;
+    window.applyWaybillData = wrapped;
+  }
+
+  const oldApplySelectedPdfWaybill2 = window.applySelectedPdfWaybill;
+  if(typeof oldApplySelectedPdfWaybill2 === "function" && !oldApplySelectedPdfWaybill2.__sellerConfirmInsideWrapped){
+    const wrapped = function(){
+      const r = oldApplySelectedPdfWaybill2.apply(this, arguments);
+      runPlaceSellerConfirm();
+      return r;
+    };
+    wrapped.__sellerConfirmInsideWrapped = true;
+    window.applySelectedPdfWaybill = wrapped;
+  }
+
+  const target = document.getElementById("bulkPdfPreview");
+  if(target){
+    const observer = new MutationObserver(runPlaceSellerConfirm);
+    observer.observe(target, { childList:true, subtree:true });
+  }
+})();
+</script>
+
+
+<script>
+(function(){
+  function getActivitySessionId(){
+    let id = sessionStorage.getItem("waybillActivitySessionId");
+    if(!id){
+      id = "S-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 9);
+      sessionStorage.setItem("waybillActivitySessionId", id);
+    }
+    return id;
+  }
+
+  async function sendWebsiteActivity(action){
+    try{
+      const payload = {
+        action: action || "open",
+        page: document.title || "Waybill Editor",
+        sessionId: getActivitySessionId(),
+        browser: navigator.userAgent || "",
+        platform: navigator.platform || "",
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "",
+        screenSize: (screen && screen.width && screen.height) ? (screen.width + "x" + screen.height) : "",
+        href: location.href
+      };
+
+      await fetch("/.netlify/functions/usage-alert", {
+        method: "POST",
+        headers: {"Content-Type":"application/json"},
+        credentials: "same-origin",
+        cache: "no-store",
+        body: JSON.stringify(payload)
+      });
+    }catch(e){
+      // Do not block the editor if Discord usage alert fails.
+    }
+  }
+
+  window.sendWebsiteActivity = sendWebsiteActivity;
+
+  if(!sessionStorage.getItem("waybillOpenedAlertSent")){
+    sessionStorage.setItem("waybillOpenedAlertSent", "1");
+    setTimeout(function(){ sendWebsiteActivity("open"); }, 1200);
+  }
+
+  // Sends an "active" alert every 5 minutes while the page is open.
+  setInterval(function(){
+    if(!document.hidden) sendWebsiteActivity("active");
+  }, 5 * 60 * 1000);
+
+  // Track important buttons without changing existing behavior.
+  document.addEventListener("click", function(e){
+    const btn = e.target && e.target.closest ? e.target.closest("button") : null;
+    if(!btn) return;
+
+    const text = String(btn.textContent || "").toLowerCase();
+    if(text.includes("download")){
+      sendWebsiteActivity("download");
+    }else if(text.includes("apply")){
+      sendWebsiteActivity("apply");
+    }else if(text.includes("logout")){
+      sendWebsiteActivity("logout");
+    }
+  }, true);
+
+  window.addEventListener("beforeunload", function(){
+    try{
+      const payload = JSON.stringify({
+        action: "logout",
+        page: document.title || "Waybill Editor",
+        sessionId: getActivitySessionId(),
+        browser: navigator.userAgent || "",
+        platform: navigator.platform || "",
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "",
+        screenSize: (screen && screen.width && screen.height) ? (screen.width + "x" + screen.height) : "",
+        href: location.href
+      });
+      navigator.sendBeacon("/.netlify/functions/usage-alert", new Blob([payload], { type:"application/json" }));
+    }catch(e){}
+  });
+})();
+</script>
+
+
+<script>
+(function(){
+  async function updateOnlineUsersDisplay(){
+    try{
+      // ping activity first so this browser is counted
+      if(typeof window.sendWebsiteActivity === "function"){
+        window.sendWebsiteActivity("active");
+      }
+
+      const res = await fetch("/.netlify/functions/online-count", {
+        cache:"no-store",
+        credentials:"same-origin"
+      });
+      const json = await res.json();
+      if(!json.ok) throw new Error(json.error || "Online count error");
+
+      const countEl = document.getElementById("onlineUsersCount");
+      const listEl = document.getElementById("onlineUsersList");
+
+      if(countEl) countEl.textContent = json.onlineCount;
+      if(listEl){
+        const names = (json.users || []).map(u => `${u.user || "Unknown"} - ${u.lastAction || "active"}`);
+        listEl.textContent = names.length ? names.join(" | ") : "No active users yet.";
+      }
+    }catch(e){
+      const countEl = document.getElementById("onlineUsersCount");
+      const listEl = document.getElementById("onlineUsersList");
+      if(countEl) countEl.textContent = "?";
+      if(listEl) listEl.textContent = "Online count unavailable.";
+    }
+  }
+
+  window.updateOnlineUsersDisplay = updateOnlineUsersDisplay;
+  setTimeout(updateOnlineUsersDisplay, 1800);
+  setInterval(updateOnlineUsersDisplay, 30000);
+})();
+</script>
+
+
+<script>
+(function(){
+  function bulkSellerText(id){
+    const el = document.getElementById(id);
+    return el ? String(el.textContent || "").trim() : "";
+  }
+
+  function setBulkSellerText(id, value){
+    const el = document.getElementById(id);
+    if(el) el.textContent = String(value || "").trim();
+  }
+
+  function getCurrentSellerForAll(){
+    return {
+      sellerName: bulkSellerText("p_sellerName"),
+      sellerLine1: bulkSellerText("p_sellerLine1"),
+      sellerCity: bulkSellerText("p_sellerCity"),
+      sellerArea: bulkSellerText("p_sellerArea"),
+      sellerProvince: bulkSellerText("p_sellerProvince"),
+      sellerRegion: bulkSellerText("p_sellerRegion"),
+      sellerZip: bulkSellerText("p_sellerZip")
+    };
+  }
+
+  function setCurrentSellerPreview(seller){
+    setBulkSellerText("p_sellerName", seller.sellerName);
+    setBulkSellerText("p_sellerLine1", seller.sellerLine1);
+    setBulkSellerText("p_sellerCity", seller.sellerCity);
+    setBulkSellerText("p_sellerArea", seller.sellerArea);
+    setBulkSellerText("p_sellerProvince", seller.sellerProvince);
+    setBulkSellerText("p_sellerRegion", seller.sellerRegion);
+    setBulkSellerText("p_sellerZip", seller.sellerZip);
+  }
+
+  function applySellerToWaybillObject(w, seller){
+    if(!w) return;
+    w.sellerName = seller.sellerName;
+    w.sellerLine1 = seller.sellerLine1;
+    w.sellerCity = seller.sellerCity;
+    w.sellerArea = seller.sellerArea;
+    w.sellerProvince = seller.sellerProvince;
+    w.sellerRegion = seller.sellerRegion;
+    w.sellerZip = seller.sellerZip;
+    w.sellerBulkApplied = true;
+  }
+
+  window.applySellerToAllWaybills = function(seller){
+    if(!window.extractedPdfWaybills && typeof extractedPdfWaybills === "undefined"){
+      alert("No extracted waybills found.");
+      return;
+    }
+
+    const list = typeof extractedPdfWaybills !== "undefined" ? extractedPdfWaybills : [];
+    if(!list.length){
+      alert("Mag-upload muna ng PDF bago mag-apply sa lahat.");
+      return;
+    }
+
+    list.forEach(w => applySellerToWaybillObject(w, seller));
+
+    if(typeof selectedPdfWaybillIndex === "undefined") selectedPdfWaybillIndex = 0;
+    if(selectedPdfWaybillIndex < 0) selectedPdfWaybillIndex = 0;
+    if(selectedPdfWaybillIndex >= list.length) selectedPdfWaybillIndex = 0;
+
+    setCurrentSellerPreview(seller);
+
+    if(typeof renderPdfPreviewTable === "function") renderPdfPreviewTable();
+    if(typeof applyWaybillData === "function") applyWaybillData(list[selectedPdfWaybillIndex]);
+    if(typeof setBulkPdfStatus === "function"){
+      setBulkPdfStatus("Seller address applied to all " + list.length + " waybill(s).");
+    }
+
+    if(typeof window.sendWebsiteActivity === "function"){
+      window.sendWebsiteActivity("apply seller to all");
+    }
+
+    alert("Done. Seller address applied to all " + list.length + " waybill(s).");
+  };
+
+  window.applyCurrentSellerToAllWaybills = function(){
+    const seller = getCurrentSellerForAll();
+
+    const summary =
+      "Apply this seller address to ALL extracted waybills?\n\n" +
+      "Seller Name/Phone:\n" + seller.sellerName + "\n\n" +
+      "Seller Address:\n" + seller.sellerLine1 + "\n\n" +
+      "City: " + seller.sellerCity + "\n" +
+      "Barangay/Area: " + seller.sellerArea + "\n" +
+      "Province: " + seller.sellerProvince + "\n" +
+      "Region: " + seller.sellerRegion + "\n" +
+      "ZIP: " + seller.sellerZip;
+
+    if(!confirm(summary)) return;
+    window.applySellerToAllWaybills(seller);
+  };
+
+  window.editSellerThenApplyToAllWaybills = function(){
+    const current = getCurrentSellerForAll();
+
+    const sellerName = prompt("Seller Name / Phone:", current.sellerName);
+    if(sellerName === null) return;
+
+    const sellerLine1 = prompt("Seller Address:", current.sellerLine1);
+    if(sellerLine1 === null) return;
+
+    const sellerCity = prompt("Seller City:", current.sellerCity);
+    if(sellerCity === null) return;
+
+    const sellerArea = prompt("Seller Barangay / Area:", current.sellerArea);
+    if(sellerArea === null) return;
+
+    const sellerProvince = prompt("Seller Province:", current.sellerProvince);
+    if(sellerProvince === null) return;
+
+    const sellerRegion = prompt("Seller Region / Country:", current.sellerRegion || "Philippines");
+    if(sellerRegion === null) return;
+
+    const sellerZip = prompt("Seller ZIP:", current.sellerZip);
+    if(sellerZip === null) return;
+
+    const seller = {
+      sellerName,
+      sellerLine1,
+      sellerCity,
+      sellerArea,
+      sellerProvince,
+      sellerRegion,
+      sellerZip
+    };
+
+    setCurrentSellerPreview(seller);
+    window.applySellerToAllWaybills(seller);
+  };
+})();
+</script>
+
+</body>
+</html>
