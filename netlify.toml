@@ -1,0 +1,29 @@
+[build]
+publish = "public"
+functions = "netlify/functions"
+
+[functions]
+included_files = ["private/editor.html"]
+
+[[redirects]]
+from = "/"
+to = "/.netlify/functions/editor"
+status = 200
+
+[[redirects]]
+from = "/editor"
+to = "/.netlify/functions/editor"
+status = 200
+
+[[redirects]]
+from = "/login"
+to = "/login.html"
+status = 200
+
+[[headers]]
+for = "/*"
+  [headers.values]
+  Cache-Control = "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0"
+  Pragma = "no-cache"
+  Expires = "0"
+

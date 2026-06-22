@@ -1,0 +1,11 @@
+{
+  "name": "netlify-secure-waybill",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Secure Netlify Waybill Editor",
+  "scripts": {
+    "dev": "netlify dev"
+  },
+  "dependencies": {},
+  "devDependencies": {}
+}

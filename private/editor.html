@@ -1,0 +1,5205 @@
+<!DOCTYPE html>
+<html lang="tl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Clean Waybill Editor - Demo</title>
+<style>
+
+
+.tracking{
+
+    font-size:30px;
+
+    font-weight:900;
+
+    line-height:1;
+
+    white-space:nowrap;
+
+    overflow:hidden;
+
+    padding-left:6px;
+
+    padding-top:9px;
+
+    letter-spacing:-1;
+}
+
+.tracking .big{
+
+    font-size:58px;
+
+    line-height:.9;
+
+    display:inline-block;
+
+    vertical-align:middle;
+
+    margin-right:2px;
+}
+
+*{box-sizing:border-box}
+
+body{
+
+margin:0;
+background:#eee;
+font-family:Arial,Helvetica,sans-serif;
+color:#000;
+padding:16px
+
+}
+
+.pdg{
+
+    position:absolute;
+
+    top:8px;
+    right:10px;
+    font-size:28px;
+
+    font-weight:900;
+
+    letter-spacing:1px;
+}
+
+.logo{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border-bottom:4px solid #000;
+  padding:6px;
+}
+
+.logo-img{
+  width:150px;
+  height:auto;
+  object-fit:contain;
+}
+
+.side{
+  border-right:4px solid #000;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:25px;
+  position:relative;
+  overflow:hidden;
+  writing-mode:horizontal-tb;
+  transform:none;
+}
+
+.side span{
+  display:block;
+  transform:rotate(-90deg);
+  white-space:nowrap;
+}
+
+.shop{
+    border-right:4px solid #000;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    overflow:hidden;
+    padding:0;
+}
+
+.shopee-img{
+    width: 170px;
+    height:90%;
+    object-fit:contain;
+}
+
+
+/* SAFE WHITE MARGIN PARA HINDI MA-CUT SA PRINT */
+.print-page{
+  background:#fff;
+  padding:12px;              /* palakihin kung gusto mo mas makapal ang puti */
+  display:inline-block;
+  box-sizing:border-box;
+  overflow:visible;
+}
+
+@media print{
+  @page{
+    size:4in 6in;
+    margin:0;
+  }
+
+  html,body{
+    margin:0 !important;
+    padding:0 !important;
+    background:#fff !important;
+  }
+
+  .editor{
+    display:none !important;
+  }
+
+  .app{
+    display:block !important;
+  }
+
+  .preview-scale{
+    padding:0 !important;
+    box-shadow:none !important;
+    border-radius:0 !important;
+    background:#fff !important;
+  }
+
+  .print-page{
+    padding:12px !important;  /* ito ang safe margin sa thermal printer */
+    background:#fff !important;
+    box-sizing:border-box;
+  }
+}
+
+/* PREVIEW */
+.preview-scale{width:560px;flex:0 0 560px}
+.waybill{
+  width:560px;height:770px;background:#fff;border:5px solid #000;
+  position:relative;overflow:hidden;font-family:Arial,Helvetica,sans-serif;
+}
+.sample{
+  position:absolute;left:80px;top:305px;font-size:54px;font-weight:900;
+  transform:rotate(-25deg);opacity:.12;z-index:5;pointer-events:none;white-space:nowrap;
+}
+
+.app{display:flex;gap:24px;align-items:flex-start}
+.editor{width:520px;background:#fff;border:2px solid #000;flex:0 0 520px}
+.editor h1{margin:0;background:#000;color:#fff;padding:12px 14px;font-size:22px}
+.note{background:#fff4c7;padding:9px 14px;font-size:12px;line-height:1.35;border-bottom:1px solid #bbb}
+.section{padding:10px 14px;border-bottom:1px solid #ccc}
+.section-title{font-weight:900;margin-bottom:8px;font-size:15px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
+label{font-size:12px;font-weight:700;display:block;margin:6px 0 3px}
+input{width:100%;height:30px;border:1px solid #bbb;border-radius:4px;padding:4px 7px;font-size:13px}
+button{height:42px;border:0;border-radius:4px;color:#fff;font-weight:900;cursor:pointer}
+.buttons{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;padding:12px}
+.download{background:#168a2d}.reset{background:#176ee8}
+
+
+.top{height:140px;display:grid;grid-template-columns:190px 1fr;border-bottom:4px solid #000}
+.logoBlock{border-right:4px solid #000;display:grid;grid-template-rows:75px 65px}
+.logo{display:flex;align-items:center;justify-content:center;border-bottom:4px solid #000;font-size:30px;font-weight:900;font-style:italic;letter-spacing:-2px}
+.logo small{font-size:10px;margin-left:-12px;margin-top:30px}.bolt{color:#e8a400;margin:0 3px}
+.order{display:flex;align-items:center;justify-content:center;flex-direction:column;font-size:14px}.order div:last-child{font-size:18px;margin-top:6px}
+.serviceBlock{padding:1px 1px}.tracking{font-size:27px;font-weight:900;line-height:1;white-space:nowrap}.tracking .big{font-size:60px}
+.service{font-size:41px;margin-top:13px;letter-spacing:0px}
+
+/*ETO NADAGDAG*/
+
+:root{
+
+    --barcode-width:5.20in;
+    --barcode-height:.90in;
+}
+
+.barcode{height:130px;border-bottom:4px solid #000;text-align:center;padding:7px 12px 0}
+.barcodeBox{
+
+    position:absolute;
+
+    left:0;
+
+    top:1.01in;
+
+    width:4in;
+
+    height:.94in;
+
+    border-bottom:2px solid #000;
+
+    text-align:center;
+
+    padding-top:2px;
+
+    overflow:hidden;
+}
+
+/* FAKE BARCODE */
+.barcodeFake{
+
+    width:var(--barcode-width) !important;
+
+    height:var(--barcode-height) !important;
+
+    background:repeating-linear-gradient(
+        90deg,
+        #000 0 4px,
+        #fff 4px 6px,
+        #000 6px 10px,
+        #fff 10px 13px,
+        #000 13px 19px,
+        #fff 19px 22px
+    );
+
+    display:block;
+
+    margin:0 auto;
+}
+
+
+/* BARCODE IMAGE */
+.barcodeBox img{
+
+    width:var(--barcode-width) !important;
+
+    height:var(--barcode-height) !important;
+
+    object-fit:fill !important;
+
+    display:block;
+
+    margin:0 auto;
+}
+
+
+.barcodeText{
+
+    font-size:13px;
+
+    margin-top:2px;
+}
+
+/*----*/
+
+
+.barcodeFake{background:repeating-linear-gradient(90deg,#000 0 3px,#fff 3px 6px,#000 6px 8px,#fff 8px 13px,#000 13px 17px,#fff 17px 22px)}
+.barcodeText{font-size:18px;line-height:25px}
+
+.address{height:272px;border-bottom:4px solid #000;display:grid;grid-template-rows:150px 122px}
+.addrRow{display:grid;grid-template-columns:34px 1fr}
+.addrRow:first-child{border-bottom:4px solid #000}
+
+.addrContent{position:relative;padding:4px 9px;overflow:hidden}
+.name{font-size:19px;line-height:1.15}.line{font-size:19px;line-height:1.18;white-space:nowrap}
+.locLeft{position:absolute;left:9px;bottom:10px;font-size:20px;line-height:1.25}
+.locMid{position:absolute;left:280px;bottom:10px;font-size:20px;line-height:1.25}
+.locRight{position:absolute;right:10px;bottom:10px;font-size:20px;line-height:1.25;text-align:right;font-weight:900}
+.seller .name,.seller .line{font-size:17px}.seller .locLeft,.seller .locMid,.seller .locRight{font-size:19px}
+
+/* FIX: huwag lumagpas ang mahabang address */
+.addressText{
+  position:absolute;
+  left:9px;
+  top:4px;
+  bottom:56px;
+  overflow:hidden;
+}
+.buyerText{
+  right:92px;        /* mas malapad buyer address area para hindi madaling ma-cut */
+  bottom:42px;       /* mas maraming vertical space pero hindi tatamaan ang location row */
+}
+.sellerText{
+  right:10px;
+  bottom:52px;
+}
+.addressText .name,
+.addressText .line{
+  white-space:normal !important;
+  overflow-wrap:anywhere;
+  word-break:break-word;
+  max-width:100%;
+  margin:0;
+}
+.buyerText .name{font-size:17px;line-height:1.08;margin-bottom:2px}
+.buyerText .line{
+  font-size:16px;
+  line-height:1.06;
+  white-space:pre-wrap !important;   /* preserve pasted address/new lines */
+  overflow-wrap:anywhere;
+  word-break:break-word;
+}
+.sellerText .name{font-size:16px;line-height:1.1;margin-bottom:2px}
+.sellerText .line{font-size:14px;line-height:1.08}
+
+.parcel{height:136px;border-bottom:4px solid #000;display:grid;grid-template-columns:175px 160px 1fr}
+.area{border-right:4px solid #000;display:flex;align-items:center;justify-content:center;font-size:54px;font-weight:900}
+.qr{
+    border-right:4px solid #000;
+    border-left:4px solid #000;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:10px;
+    position:relative;
+    background:#fff;
+    overflow:hidden
+}
+.qr img{width:200px;height:128px;object-fit:contain}
+.qrFake{width:104px;height:104px;background:
+  linear-gradient(90deg,#000 10px,transparent 10px 22px,#000 22px 32px,transparent 32px),
+  linear-gradient(#000 10px,transparent 10px 22px,#000 22px 32px,transparent 32px);
+  background-size:38px 38px;border:0}
+.product{display:grid;grid-template-rows:58px 1fr}
+.productTop{border-bottom:4px solid #000}
+.productText{padding:1px 0px;font-size:14px;line-height:1.9}
+.productText b{display:inline-block;min-width:118px}
+.productText .weightRow b{min-width:55px;}
+.productText .weightRow #p_weight{margin-left:2px; max-width:145px;}
+.productText .qtyRow #p_quantity{margin-left:4px;}
+
+.footer{height:90px;display:grid;grid-template-columns:208px 176px 176px}
+.shop{border-right:4px solid #000;display:grid;grid-template-columns:48px 1fr;align-items:center;padding:8px 9px;font-size:12px;line-height:1.15}
+
+.icon{width:36px;height:36px;background:#d84b2e;color:#fff;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:25px;font-weight:900}
+.attempt{display:grid;grid-template-rows:32px 1fr}
+.attempt.delivery{border-right:4px solid #000}
+.attemptTitle{border-bottom:4px solid #000;text-align:center;font-size:14px;padding-top:8px;white-space:nowrap}
+.nums{display:grid;grid-template-columns:1fr 1fr 1fr}
+.nums div{border-right:4px solid #000;display:flex;align-items:center;justify-content:center;font-size:24px}
+.nums div:last-child{border-right:0}
+.logoBox{
+    position:absolute;
+}
+
+.orderBox{
+    position:absolute;
+}
+
+.barcodeBox{
+    position:absolute;
+}
+
+.buyerArea{
+    position:absolute;
+}
+.tracking .big{
+    font-size:48px;
+}
+.tracking{
+    font-size:23px;
+    font-weight:900;
+    white-space:nowrap;
+}
+.productTop{
+
+    border-bottom:4px solid #000;
+
+    padding:4px 6px;
+
+    overflow:hidden;
+
+    display:flex;
+    align-items:flex-start;
+}
+
+.remarksLabel{
+
+    font-size:19px;
+
+    line-height:1;
+
+    white-space:normal;
+
+    overflow-wrap:break-word;
+
+    max-width:100%;
+}
+
+#p_remarks{
+    font-weight:normal;
+}
+
+
+/* BARCODE IMAGE UPLOAD + RESIZE/POSITION */
+.barcode{
+    position:relative;
+    overflow:hidden;
+    padding:0 !important;
+    height:130px;
+}
+#barcodeFake,
+#barcodeImage{
+    position:absolute;
+    left:20px;
+    top:4px;
+    width:510px;
+    height:70px;
+    object-fit:fill;
+    transform-origin:top left;
+    margin:0 !important;
+}
+#barcodeImage{
+    display:none;
+}
+.barcodeText{
+    position:absolute;
+    left:0;
+    right:0;
+    top:99px;
+    text-align:center;
+    font-size:18px;
+    line-height:20px;
+}
+
+
+/* TRACKING NO IMAGE UPLOAD + RESIZE/POSITION - FIXED, HINDI NA NABABANAT */
+.tracking{
+    height:75px;
+    padding:2 !important;
+    position:relative;
+    overflow:hidden;
+    background:#fff;
+}
+.tracking-img{
+    position:absolute;
+    left:0px;
+    top:0px;
+    width:300px;
+    height:auto;
+    max-height:none;
+    object-fit:contain;
+    display:block;
+}
+#trackingPlaceholder{
+    position:absolute;
+    inset:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:18px;
+    color:#777;
+    font-weight:700;
+}
+.control-note{font-size:11px;color:#444;margin-top:6px;line-height:1.3}
+
+
+/* CLEANER EDITOR UI */
+body{
+  background:linear-gradient(180deg,#f5f6f8,#e7e9ee);
+  padding:20px;
+}
+.app{
+  gap:28px;
+  align-items:flex-start;
+  justify-content:center;
+}
+.editor{
+  width:520px;
+  flex:0 0 520px;
+  border:0;
+  border-radius:16px;
+  overflow:hidden;
+  background:#f8fafc;
+  box-shadow:0 14px 40px rgba(0,0,0,.18);
+  position:sticky;
+  top:16px;
+  max-height:calc(100vh - 32px);
+  overflow-y:auto;
+}
+.editor-header{
+  background:#111827;
+  color:#fff;
+  padding:18px 18px 16px;
+  border-bottom:4px solid #f2c94c;
+}
+.editor-header h1{
+  margin:2px 0 4px;
+  padding:0;
+  background:transparent;
+  font-size:27px;
+  letter-spacing:.2px;
+}
+.editor-header p{
+  margin:0;
+  font-size:13px;
+  line-height:1.4;
+  color:#d1d5db;
+}
+.eyebrow{
+  font-size:11px;
+  font-weight:900;
+  color:#f2c94c;
+  letter-spacing:1.2px;
+}
+.panel{
+  margin:12px;
+  border:1px solid #d6dbe4;
+  border-radius:12px;
+  background:#fff;
+  overflow:hidden;
+  box-shadow:0 4px 14px rgba(15,23,42,.06);
+}
+.panel summary{
+  list-style:none;
+  cursor:pointer;
+  padding:13px 14px;
+  font-size:15px;
+  font-weight:900;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  background:#fff;
+  border-bottom:1px solid #eef1f5;
+}
+.panel summary::-webkit-details-marker{display:none}
+.panel summary span{
+  width:26px;
+  height:26px;
+  border-radius:50%;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  background:#111827;
+  color:#fff;
+  font-size:13px;
+}
+.panel:not([open]) summary{border-bottom:0}
+.panel-body{
+  padding:14px;
+}
+.field{margin-bottom:10px}
+.field.full{grid-column:1/-1}
+.field label,
+label{
+  font-size:12px;
+  font-weight:900;
+  color:#1f2937;
+  margin:0 0 5px;
+}
+input, select{
+  height:36px;
+  border:1px solid #cbd5e1;
+  border-radius:9px;
+  background:#fff;
+  padding:7px 10px;
+  font-size:14px;
+  outline:none;
+  transition:.15s ease;
+  width:100%;
+}
+input:focus, select:focus{
+  border-color:#111827;
+  box-shadow:0 0 0 3px rgba(17,24,39,.12);
+}
+input[readonly]{
+  background:#f3f4f6;
+  color:#6b7280;
+}
+input[type=file]{
+  padding:6px;
+  height:40px;
+  background:#f9fafb;
+}
+.grid2{gap:10px}
+.grid3{gap:10px}
+.compact-controls input{font-family:Consolas,monospace}
+.hint,
+.control-note{
+  font-size:12px;
+  line-height:1.45;
+  color:#4b5563;
+  background:#fff7d6;
+  border:1px solid #f3df91;
+  padding:9px 10px;
+  border-radius:9px;
+  margin-top:4px;
+}
+.buttons.sticky-actions{
+  position:sticky;
+  bottom:0;
+  background:#f8fafc;
+  border-top:1px solid #d6dbe4;
+  padding:12px;
+  z-index:10;
+}
+button{
+  height:44px;
+  border-radius:10px;
+  letter-spacing:.2px;
+}
+.download{background:#15803d}
+.reset{background:#1d4ed8}
+.preview-scale{
+  background:#fff;
+  padding:14px;
+  border-radius:16px;
+  box-shadow:0 14px 40px rgba(0,0,0,.16);
+}
+.waybill{
+  box-shadow:0 3px 10px rgba(0,0,0,.15);
+}
+
+.upload-card{
+  margin-top:12px;
+  padding:12px;
+  border:1px solid #d6dbe4;
+  border-radius:12px;
+  background:#ffffff;
+}
+.upload-card-title{
+  font-weight:900;
+  font-size:14px;
+  color:#111827;
+  margin-bottom:8px;
+  padding-bottom:7px;
+  border-bottom:1px dashed #cbd5e1;
+}
+
+/* DIRECT EDIT SA MISMONG WAYBILL */
+[contenteditable="true"]{
+  outline:0;
+  cursor:text;
+}
+[contenteditable="true"]:focus{
+  outline:2px dashed #1d4ed8;
+  outline-offset:2px;
+  background:rgba(29,78,216,.08);
+}
+.edit-hint-main{
+  margin:12px;
+  padding:10px 12px;
+  border-radius:10px;
+  background:#ecfeff;
+  border:1px solid #67e8f9;
+  color:#164e63;
+  font-size:12px;
+  line-height:1.4;
+}
+@media print{
+  [contenteditable="true"]:focus{
+    outline:0;
+    background:transparent;
+  }
+}
+
+
+/* SELECTED EDITABLE TEXT STYLE CONTROLS */
+[contenteditable="true"]{
+  cursor:text;
+  outline:0;
+}
+[contenteditable="true"]:focus,
+[contenteditable="true"].selectedEditable{
+  outline:2px dashed #2563eb;
+  outline-offset:2px;
+  background:rgba(37,99,235,.05);
+}
+.styleBtn{
+  width:100%;
+  height:38px;
+  border-radius:9px;
+  background:#111827;
+  color:#fff;
+  font-weight:900;
+}
+.styleBtn.secondary{
+  background:#475569;
+}
+
+
+/* AUTO-FIT FIX PARA HINDI MAGULO ANG WAYBILL KAPAG NAGPALIT NG FONT/SIZE */
+.addrContent,.productTop,.productText,.order,.serviceBlock,.area,.locLeft,.locMid,.locRight{overflow:hidden;}
+[contenteditable="true"]{box-sizing:border-box;max-width:100%;}
+#p_orderId,
+#p_service,
+#p_buyerCity,
+#p_buyerArea,
+#p_buyerProvince,
+#p_buyerRegion,
+#p_buyerZip,
+#p_sellerCity,
+#p_sellerArea,
+#p_sellerProvince,
+#p_sellerRegion,
+#p_sellerZip,
+#p_remarks,
+#p_quantity,
+#p_weight{
+  white-space:nowrap;
+  overflow:hidden;
+}
+#p_orderId,#p_service,#p_buyerZip,#p_sellerZip,#p_remarks,#p_quantity,#p_weight{
+  display:inline-block;
+  max-width:100%;
+}
+#p_orderId{display:block;}
+#p_service{display:block; overflow:hidden;}
+#p_buyerLine1,
+#p_sellerName,
+#p_sellerLine1{
+  overflow:hidden;
+  overflow-wrap:anywhere;
+  word-break:break-word;
+}
+.productText > div{
+  overflow:hidden;
+  white-space:nowrap;
+}
+#p_quantity,#p_weight{
+  max-width:120px;
+  vertical-align:top;
+}
+.style-autofit-note{
+  font-size:12px;
+  line-height:1.45;
+  color:#166534;
+  background:#ecfdf5;
+  border:1px solid #86efac;
+  padding:9px 10px;
+  border-radius:9px;
+  margin-top:8px;
+}
+
+/* FIXED STYLE FIELDS: hindi madadamay sa font/size changes */
+.noStyleChange{
+  font-family:Arial, Helvetica, sans-serif !important;
+}
+#p_service.noStyleChange{
+  font-size:41px !important;
+}
+#p_areaCode.noStyleChange{
+  font-size:54px !important;
+  font-family:Arial, Helvetica, sans-serif !important;
+  font-weight:900 !important;
+  background:#000 !important;
+  color:#fff !important;
+  width:calc(100% - 6px);
+  height:calc(100% - 6px);
+  margin:3px;
+  box-sizing:border-box;
+  border:1px solid #fff;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
+#qrFake,
+#qrImage{
+  background:#fff;
+}
+
+@media(max-width:1120px){.app{flex-direction:column}.editor,.preview-scale{width:560px;flex:auto}}
+
+/* VECTOR PRINT MODE: mas malinaw kaysa JPG screenshot */
+@page{
+  size:4in 6in;
+  margin:0;
+}
+.print-only-note{
+  font-size:12px;
+  color:#4b5563;
+  padding:0 12px 12px;
+}
+.printVector{
+  background:#111827;
+}
+@media print{
+  html,body{
+    width:4in;
+    height:6in;
+    margin:0 !important;
+    padding:0 !important;
+    background:#fff !important;
+  }
+  .editor{display:none !important;}
+  .app{display:block !important;margin:0 !important;padding:0 !important;}
+  .preview-scale{
+    width:4in !important;
+    padding:0 !important;
+    margin:0 !important;
+    border-radius:0 !important;
+    box-shadow:none !important;
+    background:#fff !important;
+  }
+  .print-page{
+    width:4in !important;
+    height:6in !important;
+    padding:10px !important;
+    background:#fff !important;
+    box-sizing:border-box !important;
+    display:block !important;
+  }
+  .waybill{
+    width:calc(4in - 20px) !important;
+    height:calc(6in - 20px) !important;
+    box-shadow:none !important;
+    -webkit-print-color-adjust:exact !important;
+    print-color-adjust:exact !important;
+  }
+}
+
+
+/* THERMAL PRINTER FRIENDLY / ANTI-PIXELATED MODE
+   No nito binabago ang barcode at QR content/image.
+   Pinapalinaw lang ang render/print/export. */
+html, body{
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+.waybill,
+.print-page{
+  transform: translateZ(0);
+}
+
+.waybill,
+.waybill *{
+  text-rendering: geometricPrecision;
+  -webkit-font-smoothing: antialiased;
+  font-smooth: always;
+}
+
+img,
+canvas,
+svg{
+  image-rendering: auto;
+}
+
+/* Para hindi lumabo ang uploaded barcode/QR kapag naka-stretch */
+#barcodeImage,
+#qrImage,
+#trackingImage{
+  image-rendering: -webkit-optimize-contrast;
+}
+
+/* Panatilihing solid ang lines/borders sa thermal print */
+.waybill{ border-color:#000 !important; }
+.top,
+.barcode,
+.address,
+.parcel,
+.footer,
+.addrRow:first-child,
+.productTop,
+.attemptTitle{
+  border-color:#000 !important;
+}
+
+@media print{
+  *{
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  html, body{
+    width:4in !important;
+    height:6in !important;
+    margin:0 !important;
+    padding:0 !important;
+    background:#fff !important;
+  }
+
+  .editor{
+    display:none !important;
+  }
+
+  .app{
+    display:block !important;
+    margin:0 !important;
+    padding:0 !important;
+    background:#fff !important;
+  }
+
+  .preview-scale{
+    width:4in !important;
+    padding:0 !important;
+    margin:0 !important;
+    background:#fff !important;
+    box-shadow:none !important;
+    border-radius:0 !important;
+  }
+
+  .print-page{
+    width:4in !important;
+    height:6in !important;
+    padding:10px !important;
+    margin:0 !important;
+    background:#fff !important;
+    box-sizing:border-box !important;
+    overflow:hidden !important;
+  }
+
+  .waybill{
+    box-shadow:none !important;
+    margin:0 !important;
+    transform-origin:top left !important;
+  }
+
+  [contenteditable="true"]:focus,
+  [contenteditable="true"].selectedEditable{
+    outline:0 !important;
+    background:transparent !important;
+  }
+}
+
+.thermalJpg{
+  background:#7c2d12;
+}
+
+
+/* QR ONLY FIX: tanggal ang box/border sa mismong QR placeholder/image */
+#qrFake,
+#qrImage{
+  border:0 !important;
+  outline:0 !important;
+  box-shadow:none !important;
+}
+
+
+/* PASTE IMAGE MODE */
+.pasteTarget{
+  cursor:pointer;
+  position:relative;
+}
+.pasteTarget.selectedPasteTarget{
+  outline:3px dashed #16a34a !important;
+  outline-offset:-5px;
+  background-color:rgba(22,163,74,.05);
+}
+.paste-helper{
+  position:absolute;
+  right:6px;
+  bottom:4px;
+  font-size:10px;
+  color:#166534;
+  background:rgba(255,255,255,.85);
+  padding:2px 5px;
+  border-radius:4px;
+  pointer-events:none;
+  z-index:20;
+}
+@media print{
+  .selectedPasteTarget{
+    outline:0 !important;
+    background:transparent !important;
+  }
+  .paste-helper{
+    display:none !important;
+  }
+}
+
+
+/* LOGIN PAGE SECURITY LOCK */
+body.login-locked .app{
+  display:none !important;
+}
+.login-screen{
+  min-height:100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:20px;
+  background:linear-gradient(180deg,#111827,#374151);
+}
+body.login-locked{
+  background:#111827 !important;
+  padding:0 !important;
+}
+body:not(.login-locked) .login-screen{
+  display:none !important;
+}
+.login-box{
+  width:100%;
+  max-width:390px;
+  background:#fff;
+  border-radius:18px;
+  padding:26px;
+  box-shadow:0 20px 60px rgba(0,0,0,.35);
+  border-top:7px solid #f2c94c;
+}
+.login-box h2{
+  margin:0 0 6px;
+  font-size:28px;
+  color:#111827;
+}
+.login-box p{
+  margin:0 0 18px;
+  color:#4b5563;
+  font-size:14px;
+  line-height:1.4;
+}
+.login-box label{
+  font-size:13px;
+  font-weight:900;
+  color:#111827;
+}
+.login-box input{
+  height:44px;
+  font-size:16px;
+  margin-top:6px;
+}
+.login-btn{
+  width:100%;
+  margin-top:14px;
+  background:#111827;
+  color:#fff;
+}
+.login-error{
+  display:none;
+  margin-top:12px;
+  padding:10px;
+  background:#fee2e2;
+  border:1px solid #ef4444;
+  color:#991b1b;
+  border-radius:9px;
+  font-size:13px;
+  font-weight:700;
+}
+.login-loading{
+  display:none;
+  margin-top:16px;
+  padding:12px;
+  border-radius:12px;
+  background:#f9fafb;
+  border:1px solid #e5e7eb;
+  text-align:center;
+  font-size:13px;
+  font-weight:900;
+  color:#111827;
+}
+.login-loading .spinner{
+  width:30px;
+  height:30px;
+  margin:0 auto 8px;
+  border:4px solid #e5e7eb;
+  border-top-color:#111827;
+  border-radius:50%;
+  animation:loginSpin .8s linear infinite;
+}
+.login-box.loading .login-loading{
+  display:block;
+}
+.login-box.loading .login-btn,
+.login-box.loading input{
+  opacity:.65;
+  pointer-events:none;
+}
+@keyframes loginSpin{
+  to{transform:rotate(360deg)}
+}
+
+.login-privacy-note{
+  margin:12px 0 0;
+  padding:10px;
+  border-radius:10px;
+  background:#eff6ff;
+  border:1px solid #bfdbfe;
+  color:#1e3a8a;
+  font-size:12px;
+  line-height:1.35;
+}
+.login-small-link{
+  margin-top:8px;
+  font-size:11px;
+  color:#6b7280;
+  line-height:1.35;
+}
+
+.logout-btn{
+  position:fixed;
+  top:12px;
+  right:12px;
+  z-index:9999;
+  width:auto;
+  height:36px;
+  padding:0 14px;
+  border-radius:999px;
+  background:#991b1b;
+  color:#fff;
+  box-shadow:0 6px 18px rgba(0,0,0,.22);
+}
+body.login-locked .logout-btn{
+  display:none !important;
+}
+@media print{
+  .login-screen, .logout-btn{
+    display:none !important;
+  }
+}
+
+/* DOWNLOAD HISTORY PANEL */
+.history-panel{
+  margin:12px;
+  border:1px solid #d6dbe4;
+  border-radius:12px;
+  background:#fff;
+  overflow:hidden;
+  box-shadow:0 4px 14px rgba(15,23,42,.06);
+}
+.history-panel summary{
+  list-style:none;
+  cursor:pointer;
+  padding:13px 14px;
+  font-size:15px;
+  font-weight:900;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  background:#fff;
+  border-bottom:1px solid #eef1f5;
+}
+.history-panel summary::-webkit-details-marker{display:none}
+.history-panel summary span{
+  width:26px;
+  height:26px;
+  border-radius:50%;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  background:#7c2d12;
+  color:#fff;
+  font-size:13px;
+}
+.history-body{padding:12px}
+.history-actions{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px;
+  margin-bottom:10px;
+}
+.history-actions button,
+.history-item button{
+  height:34px;
+  border-radius:8px;
+  font-size:12px;
+}
+.saveHistoryBtn{background:#7c2d12}
+.clearHistoryBtn{background:#6b7280}
+.history-list{
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  max-height:260px;
+  overflow:auto;
+}
+.history-empty{
+  font-size:12px;
+  color:#6b7280;
+  background:#f9fafb;
+  border:1px dashed #cbd5e1;
+  border-radius:9px;
+  padding:10px;
+  text-align:center;
+}
+.history-item{
+  border:1px solid #e5e7eb;
+  border-radius:10px;
+  padding:9px;
+  background:#f8fafc;
+}
+.history-title{
+  font-size:13px;
+  font-weight:900;
+  color:#111827;
+  margin-bottom:3px;
+  word-break:break-word;
+}
+.history-meta{
+  font-size:11px;
+  color:#4b5563;
+  line-height:1.35;
+  margin-bottom:7px;
+}
+.history-buttons{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:7px;
+}
+.loadHistoryBtn{background:#15803d}
+.deleteHistoryBtn{background:#b91c1c}
+@media print{
+  .history-panel{display:none !important;}
+}
+
+/* FIX: history buttons must always be clickable */
+.history-panel,
+.history-body,
+.history-actions,
+.history-list,
+.history-item,
+.history-buttons{
+  position:relative;
+  z-index:50;
+}
+.history-panel button,
+.history-actions button,
+.history-item button{
+  pointer-events:auto !important;
+  cursor:pointer !important;
+  position:relative;
+  z-index:60;
+}
+
+.address-status-ok{
+  display:inline-block;
+  padding:3px 7px;
+  border-radius:999px;
+  background:#dcfce7;
+  border:1px solid #22c55e;
+  color:#166534;
+  font-weight:900;
+  font-size:11px;
+}
+.address-status-review{
+  display:inline-block;
+  padding:3px 7px;
+  border-radius:999px;
+  background:#fef3c7;
+  border:1px solid #f59e0b;
+  color:#92400e;
+  font-weight:900;
+  font-size:11px;
+}
+.address-status-bad{
+  display:inline-block;
+  padding:3px 7px;
+  border-radius:999px;
+  background:#fee2e2;
+  border:1px solid #ef4444;
+  color:#991b1b;
+  font-weight:900;
+  font-size:11px;
+}
+.importSmallBtn.reviewBtn{background:#f59e0b;color:#111827;}
+
+/* BULK PDF WAYBILL IMPORTER */
+.pdf-importer-table{
+  width:100%;
+  border-collapse:collapse;
+  font-size:11px;
+  background:#fff;
+  margin-top:10px;
+}
+.pdf-importer-table th,
+.pdf-importer-table td{
+  border:1px solid #d1d5db;
+  padding:5px;
+  vertical-align:top;
+}
+.pdf-importer-table th{
+  background:#111827;
+  color:#fff;
+  font-size:10px;
+}
+.pdf-importer-table tr.active-row{
+  outline:3px solid #16a34a;
+  outline-offset:-3px;
+  background:#ecfdf5;
+}
+.pdf-importer-actions{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px;
+  margin-top:10px;
+}
+.pdf-importer-actions button{
+  background:#111827;
+  height:38px;
+  font-size:12px;
+}
+.pdf-importer-status{
+  margin-top:8px;
+  padding:8px;
+  border-radius:9px;
+  background:#eff6ff;
+  border:1px solid #bfdbfe;
+  color:#1e3a8a;
+  font-size:12px;
+  line-height:1.35;
+}
+.pdf-raw-text{
+  width:100%;
+  min-height:90px;
+  margin-top:8px;
+  border:1px solid #cbd5e1;
+  border-radius:9px;
+  padding:8px;
+  font-size:11px;
+  font-family:Consolas, monospace;
+  resize:vertical;
+}
+.importSmallBtn{
+  height:30px;
+  border-radius:7px;
+  background:#15803d;
+  color:#fff;
+  padding:0 8px;
+  font-size:11px;
+}
+
+/* ============================================================
+   SPACIOUS / MALUWAG LAYOUT FIX
+   Mas maluwag ang editor preview table at BUYER area.
+   No binabago ang 4x6 final size, inaayos lang spacing/font.
+   ============================================================ */
+
+/* Mas maluwag ang left editor panel at PDF preview table */
+.editor{
+  width:640px !important;
+  flex:0 0 640px !important;
+}
+.preview-scale{
+  width:600px !important;
+  flex:0 0 600px !important;
+}
+.pdf-importer-table{
+  font-size:12px !important;
+  table-layout:fixed;
+}
+.pdf-importer-table th,
+.pdf-importer-table td{
+  padding:7px !important;
+  line-height:1.25;
+  word-break:break-word;
+}
+.pdf-importer-table th:nth-child(1),
+.pdf-importer-table td:nth-child(1){width:36px;}
+.pdf-importer-table th:nth-child(2),
+.pdf-importer-table td:nth-child(2){width:118px;}
+.pdf-importer-table th:nth-child(3),
+.pdf-importer-table td:nth-child(3){width:210px;}
+.pdf-importer-table th:nth-child(4),
+.pdf-importer-table td:nth-child(4){width:130px;}
+.pdf-importer-table th:nth-child(5),
+.pdf-importer-table td:nth-child(5){width:70px;}
+.pdf-importer-table th:nth-child(6),
+.pdf-importer-table td:nth-child(6){width:92px;}
+#bulkPdfPreview{
+  max-height:360px;
+  overflow:auto;
+  border:1px solid #d1d5db;
+  border-radius:10px;
+  margin-top:10px;
+}
+
+/* Mas maluwag ang BUYER, kaunti bawas sa SELLER pero kasya pa rin */
+.address{
+  grid-template-rows:165px 107px !important;
+}
+.addressText{
+  top:5px !important;
+}
+.buyerText{
+  left:9px !important;
+  right:82px !important;
+  bottom:44px !important;
+}
+.sellerText{
+  left:9px !important;
+  right:10px !important;
+  bottom:45px !important;
+}
+
+/* Mas maliit nang konti para hindi mukhang masikip */
+.buyerText .line{
+  font-size:19px !important;
+  line-height:1.05 !important;
+  white-space:pre-wrap !important;
+  overflow-wrap:anywhere !important;
+  word-break:break-word !important;
+}
+.sellerText .name{
+  font-size:16px !important;
+  line-height:1.05 !important;
+}
+.sellerText .line{
+  font-size:16px !important;
+  line-height:1.05 !important;
+}
+
+/* Bottom location fields: mas malinis at hindi masyadong malaki */
+.locLeft{
+  left:9px !important;
+  bottom:8px !important;
+  font-size:19px !important;
+  line-height:1.1 !important;
+  max-width:195px;
+}
+.locMid{
+  left:285px !important;
+  bottom:8px !important;
+  font-size:19px !important;
+  line-height:1.1 !important;
+  max-width:170px;
+}
+.locRight{
+  right:10px !important;
+  bottom:8px !important;
+  font-size:17px !important;
+  line-height:1.1 !important;
+}
+
+/* Para hindi sumikip sa province/city fields */
+#p_buyerCity,
+#p_buyerArea,
+#p_buyerProvince,
+#p_buyerRegion,
+#p_sellerCity,
+#p_sellerArea,
+#p_sellerProvince,
+#p_sellerRegion{
+  font-size:inherit !important;
+  line-height:inherit !important;
+}
+
+/* ============================================================
+   WIDER WORKSPACE FIX
+   Gamitin ang bakanteng space sa kaliwa at gawing mas malaki ang editor/table.
+   ============================================================ */
+body{
+  padding:10px !important;
+}
+.app{
+  justify-content:flex-start !important;
+  gap:22px !important;
+  max-width:none !important;
+  width:100% !important;
+}
+.editor{
+  width:760px !important;
+  flex:0 0 760px !important;
+  margin-left:0 !important;
+}
+.preview-scale{
+  width:610px !important;
+  flex:0 0 610px !important;
+}
+
+/* Palakihin ang PDF preview table para mas madaling basahin */
+#bulkPdfPreview{
+  max-height:420px !important;
+  overflow:auto !important;
+}
+.pdf-importer-table{
+  font-size:13px !important;
+  table-layout:fixed !important;
+  min-width:720px !important;
+}
+.pdf-importer-table th,
+.pdf-importer-table td{
+  padding:8px !important;
+  line-height:1.3 !important;
+}
+.pdf-importer-table th:nth-child(1),
+.pdf-importer-table td:nth-child(1){width:42px !important;}
+.pdf-importer-table th:nth-child(2),
+.pdf-importer-table td:nth-child(2){width:135px !important;}
+.pdf-importer-table th:nth-child(3),
+.pdf-importer-table td:nth-child(3){width:270px !important;}
+.pdf-importer-table th:nth-child(4),
+.pdf-importer-table td:nth-child(4){width:145px !important;}
+.pdf-importer-table th:nth-child(5),
+.pdf-importer-table td:nth-child(5){width:80px !important;}
+.pdf-importer-table th:nth-child(6),
+.pdf-importer-table td:nth-child(6){width:110px !important;}
+
+/* Buttons mas malapad at hindi siksik */
+.pdf-importer-actions{
+  grid-template-columns:1fr 1fr !important;
+  gap:12px !important;
+}
+.buttons.sticky-actions{
+  grid-template-columns:1fr 1fr 1fr !important;
+  gap:12px !important;
+}
+
+/* ============================================================
+   EXTRA WIDE PREVIEW TABLE
+   Para makita ang full info sa buyer/seller nang mas maluwag.
+   ============================================================ */
+.app{
+  gap: 26px !important;
+}
+.editor{
+  width: 920px !important;
+  flex: 0 0 920px !important;
+}
+.preview-scale{
+  width: 580px !important;
+  flex: 0 0 580px !important;
+}
+#bulkPdfPreview{
+  max-height: 470px !important;
+  overflow: auto !important;
+}
+.pdf-importer-table{
+  min-width: 865px !important;
+  width: 865px !important;
+  font-size: 13px !important;
+  table-layout: fixed !important;
+}
+.pdf-importer-table th,
+.pdf-importer-table td{
+  padding: 8px 10px !important;
+  line-height: 1.32 !important;
+  vertical-align: top !important;
+  word-break: break-word !important;
+  overflow-wrap: anywhere !important;
+}
+.pdf-importer-table th:nth-child(1),
+.pdf-importer-table td:nth-child(1){width: 42px !important;}
+.pdf-importer-table th:nth-child(2),
+.pdf-importer-table td:nth-child(2){width: 130px !important;}
+.pdf-importer-table th:nth-child(3),
+.pdf-importer-table td:nth-child(3){width: 320px !important;}
+.pdf-importer-table th:nth-child(4),
+.pdf-importer-table td:nth-child(4){width: 155px !important;}
+.pdf-importer-table th:nth-child(5),
+.pdf-importer-table td:nth-child(5){width: 80px !important;}
+.pdf-importer-table th:nth-child(6),
+.pdf-importer-table td:nth-child(6){width: 138px !important;}
+
+/* Para mas kita ang buyer status at location details */
+.pdf-importer-table td small{
+  display: block !important;
+  margin-top: 6px !important;
+  line-height: 1.25 !important;
+}
+.address-status-ok,
+.address-status-review,
+.address-status-bad{
+  margin-top: 6px !important;
+}
+
+/* ============================================================
+   DOWNLOAD STOP + ADDRESS SCORE COLOR
+   ============================================================ */
+.stopDownloadBtn{
+  background:#b91c1c !important;
+  color:#fff !important;
+}
+.stopDownloadBtn:disabled{
+  background:#9ca3af !important;
+  cursor:not-allowed !important;
+  opacity:.7;
+}
+.address-status-ok.full-score{
+  background:#dcfce7 !important;
+  border-color:#22c55e !important;
+  color:#166534 !important;
+}
+.address-status-review.low-score,
+.address-status-ok.low-score{
+  background:#fee2e2 !important;
+  border-color:#ef4444 !important;
+  color:#991b1b !important;
+}
+.pdf-importer-table tr.address-low-score{
+  background:#fff1f2 !important;
+}
+.pdf-importer-table tr.address-full-score{
+  background:#ecfdf5 !important;
+}
+.download-progress-note{
+  margin-top:8px;
+  padding:8px;
+  border-radius:9px;
+  background:#fff7ed;
+  border:1px solid #fed7aa;
+  color:#9a3412;
+  font-size:12px;
+  font-weight:800;
+}
+
+/* ============================================================
+   RESTORE BUYER TEXT SIZE
+   Balik sa dating mas malaking font, pero may auto-fit pa rin kapag sobrang haba.
+   ============================================================ */
+.buyerText .line{
+  font-size:17px !important;
+  line-height:1.08 !important;
+}
+#buyerAddressSize{
+  /* default is also updated in HTML value below */
+}
+
+/* ORIGINAL QR ONLY - clean display */
+#qrImage{
+  width:112px !important;
+  height:112px !important;
+  object-fit:contain !important;
+  background:#fff !important;
+}
+#qrFake{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:#fff !important;
+}
+
+
+.onlineOnlyLock{
+  position:fixed;
+  inset:0;
+  background:#111827;
+  color:#fff;
+  z-index:2147483647;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:22px;
+  font-family:Arial,Helvetica,sans-serif;
+}
+.onlineOnlyLockBox{
+  width:100%;
+  max-width:430px;
+  background:#fff;
+  color:#111827;
+  border-radius:18px;
+  padding:24px;
+  box-shadow:0 20px 60px rgba(0,0,0,.45);
+  border-top:7px solid #f2c94c;
+  text-align:center;
+}
+.onlineOnlyLockBox h2{margin:0 0 8px;font-size:24px}
+.onlineOnlyLockBox p{margin:0 0 14px;font-size:14px;line-height:1.45;color:#374151}
+.onlineOnlyLockBox button{
+  width:100%;
+  height:42px;
+  border:0;
+  border-radius:10px;
+  background:#111827;
+  color:#fff;
+  font-weight:900;
+  cursor:pointer;
+}
+@media print{.onlineOnlyLock{display:none!important}}
+
+
+.sellerConfirmBtn{
+  background:#f59e0b!important;
+  color:#111827!important;
+  height:30px!important;
+  border-radius:7px!important;
+  font-size:11px!important;
+  line-height:1.05!important;
+  padding:0 8px!important;
+  white-space:normal!important;
+}
+.seller-confirm-ok{
+  display:inline-block!important;
+  margin-top:6px!important;
+  padding:3px 7px!important;
+  border-radius:999px!important;
+  background:#dcfce7!important;
+  border:1px solid #22c55e!important;
+  color:#166534!important;
+  font-weight:900!important;
+  font-size:11px!important;
+}
+
+
+#confirmSellerAddressBtn{
+  display:block!important;
+  width:100%!important;
+  margin-top:4px!important;
+}
+
+
+.onlineUsersBox{
+  margin:12px;
+  padding:10px 12px;
+  border-radius:12px;
+  background:#ecfdf5;
+  border:1px solid #22c55e;
+  color:#14532d;
+  font-size:13px;
+  font-weight:900;
+}
+.onlineUsersBox small{
+  display:block;
+  margin-top:4px;
+  color:#166534;
+  font-weight:700;
+  font-size:11px;
+  line-height:1.35;
+}
+
+
+.bulkSellerBox{
+  margin-top:12px;
+  padding:12px;
+  border:2px solid #7c3aed;
+  border-radius:12px;
+  background:#f5f3ff;
+}
+.bulkSellerBox .bulkSellerTitle{
+  font-weight:900;
+  color:#4c1d95;
+  margin-bottom:7px;
+}
+.bulkSellerBox button{
+  background:#7c3aed !important;
+  height:38px !important;
+  font-size:12px !important;
+  width:100% !important;
+}
+.bulkSellerBox .bulkSellerBtn2{
+  background:#111827 !important;
+}
+.bulkSellerBox small{
+  display:block;
+  color:#4c1d95;
+  margin-top:6px;
+  line-height:1.35;
+  font-size:11px;
+}
+
+</style>
+
+<style>
+.seller .locLeft{
+  max-width:245px !important;
+  overflow:hidden !important;
+}
+.seller .locMid{
+  left:325px !important;
+  max-width:145px !important;
+  overflow:hidden !important;
+}
+.seller .locRight{
+  min-width:58px !important;
+}
+.seller .locLeft div,
+.seller .locMid div,
+.seller .locRight div{
+  white-space:nowrap !important;
+  overflow:hidden !important;
+  text-overflow:clip !important;
+}
+.sellerText .line{
+  white-space:normal !important;
+  overflow-wrap:anywhere !important;
+  word-break:break-word !important;
+}
+</style>
+
+</head>
+<body>
+<div id="loginScreen" class="login-screen" style="display:none">
+  <form id="loginForm" class="login-box" autocomplete="off">
+    <h2>Login Required</h2>
+    <p>USER</p>
+    <label for="loginName">User</label>
+    <input id="loginName" type="text" placeholder="USER" autocomplete="username" required>
+    <label for="loginPassword" style="margin-top:10px;">Password</label>
+    <input id="loginPassword" type="password" placeholder="Enter password" autocomplete="current-password">
+    <div class="login-privacy-note"><b>Notice:</b>Pag hindi nag login, Ulitin mo lang.</div>
+    <button id="loginBtn" type="submit" class="login-btn">LOGIN</button>
+    <div id="loginLoading" class="login-loading"><div class="spinner"></div>Loading editor...</div>
+    <div id="loginError" class="login-error">Wrong Password. Try again.</div>
+  </form>
+</div>
+<button type="button" class="logout-btn" onclick="logoutWebsite()">LOGOUT</button>
+
+<div class="app">
+  <div class="editor">
+    <div class="editor-header">
+      <div>
+        <div class="eyebrow">TEAM DION</div>
+        <h1>Waybill Editor</h1>
+        <p></p>
+      </div>
+    </div>
+    
+    <div class="onlineUsersBox">
+      ONLINE NOW: <span id="onlineUsersCount">...</span>
+      <small id="onlineUsersList">Checking online users...</small>
+    </div>
+
+    <div class="edit-hint-main"><b>Direct edit:</b> Click the text directly on the waybill to edit the address, seller, area code, note, quantity, weight, order ID, and service. Upload and barcode/QR controls are still on the side.</div>
+
+    <details class="panel" open>
+      <summary><span>PDF</span> Bulk PDF Waybill Importer</summary>
+      <div class="panel-body">
+        <div class="upload-card">
+          <div class="upload-card-title">Upload Original PDF Waybill</div>
+          <div class="field full">
+            <label>Upload PDF / multiple waybills per PDF</label>
+            <input id="bulkPdfUpload" type="file" accept="application/pdf,.pdf">
+          </div>
+          <div class="hint">
+            After upload, the address will auto-fill when confidence is high. If the score is 99% or below, it will show red REVIEW and must be confirmed before bulk download. You can also stop the download while it is running. The large Tracking No. and ORIGINAL QR code will be taken as image crops from the original PDF. No generated QR will be created.
+            Check the extracted data first, then click <b>APPLY SELECTED</b> or <b>DOWNLOAD ALL</b>.
+          </div>
+          <div id="bulkPdfStatus" class="pdf-importer-status">No PDF has been uploaded yet.</div>
+          <div class="pdf-importer-actions">
+            <button type="button" onclick="applySelectedPdfWaybill()">APPLY SELECTED</button>
+            <button type="button" onclick="downloadAllExtractedWaybills()">DOWNLOAD ALL JPG</button>
+            <button id="stopBulkDownloadBtn" type="button" class="stopDownloadBtn" onclick="stopBulkDownload()" disabled>STOP DOWNLOAD</button>
+          </div>
+          <div class="pdf-importer-actions">
+            <button type="button" onclick="selectPrevPdfWaybill()">PREV</button>
+            <button type="button" onclick="selectNextPdfWaybill()">NEXT</button>
+          </div>
+          
+        <div class="bulkSellerBox">
+          <div class="bulkSellerTitle">Seller Address for All Waybills</div>
+          <div class="grid2">
+            <button type="button" onclick="applyCurrentSellerToAllWaybills()">APPLY CURRENT SELLER TO ALL</button>
+            <button type="button" class="bulkSellerBtn2" onclick="editSellerThenApplyToAllWaybills()">EDIT SELLER FOR ALL</button>
+          </div>
+          <small>
+            Edit the seller once on the preview, then click APPLY CURRENT SELLER TO ALL.
+            This will update seller name, address, city, barangay/area, province, region, and ZIP for every extracted waybill.
+          </small>
+        </div>
+
+          <div id="bulkPdfPreview"></div>
+          <textarea id="bulkPdfRawText" class="pdf-raw-text" readonly placeholder="Raw text of the selected PDF page..."></textarea>
+        </div>
+      </div>
+    </details>
+
+
+    <details class="panel" open>
+      <summary><span>1</span> Upload Pictures / Image Controls</summary>
+      <div class="panel-body">
+
+        <div class="upload-card">
+          <div class="upload-card-title">Address Text Style</div>
+          <div class="grid2 compact-controls">
+            <div class="field">
+              <label>Buyer Address Size</label>
+              <input id="buyerAddressSize" type="number" value="16" min="8" max="35" step="1">
+            </div>
+            <div class="field">
+              <label>Seller Address Size</label>
+              <input id="sellerAddressSize" type="number" value="12" min="8" max="35" step="1">
+            </div>
+            <div class="field">
+              <label>Buyer Address Font</label>
+              <select id="buyerAddressFont">
+                <option value="Arial, Helvetica, sans-serif">Arial</option>
+                <option value="Arial Black, Arial, sans-serif">Arial Black</option>
+                <option value="Tahoma, Geneva, sans-serif">Tahoma</option>
+                <option value="Verdana, Geneva, sans-serif">Verdana</option>
+                <option value="Georgia, serif">Georgia</option>
+                <option value="Courier New, monospace">Courier New</option>
+                <option value="Times New Roman, serif">Times New Roman</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Seller Address Font</label>
+              <select id="sellerAddressFont">
+                <option value="Arial, Helvetica, sans-serif">Arial</option>
+                <option value="Arial Black, Arial, sans-serif">Arial Black</option>
+                <option value="Tahoma, Geneva, sans-serif">Tahoma</option>
+                <option value="Verdana, Geneva, sans-serif">Verdana</option>
+                <option value="Georgia, serif">Georgia</option>
+                <option value="Courier New, monospace">Courier New</option>
+                <option value="Times New Roman, serif">Times New Roman</option>
+              </select>
+            </div>
+          </div>
+          <div class="hint">Tip: If the address is too long and overflows, reduce the size a little. If it is too small, increase the size.</div>
+        </div>
+
+        <div class="upload-card">
+          <div class="upload-card-title">All Editable Text Style</div>
+          <div class="field full">
+            <label>Area Code / Sorting Code</label>
+            <input id="areaCodeInput" value="A091" oninput="updateAreaCodeFromForm()">
+          </div>
+
+          <div class="grid2 compact-controls">
+            <div class="field">
+              <label>Selected Text Size</label>
+              <input id="selectedTextSize" type="number" value="16" min="6" max="80" step="1">
+            </div>
+            <div class="field">
+              <label>Selected Text Font</label>
+              <select id="selectedTextFont">
+                <option value="Arial, Helvetica, sans-serif">Arial</option>
+                <option value="Arial Black, Arial, sans-serif">Arial Black</option>
+                <option value="Tahoma, Geneva, sans-serif">Tahoma</option>
+                <option value="Verdana, Geneva, sans-serif">Verdana</option>
+                <option value="Georgia, serif">Georgia</option>
+                <option value="Courier New, monospace">Courier New</option>
+                <option value="Times New Roman, serif">Times New Roman</option>
+                <option value="Impact, Charcoal, sans-serif">Impact</option>
+              </select>
+            </div>
+            <div class="field">
+              <button type="button" class="styleBtn" onclick="applyStyleToSelectedEditable()">APPLY SA SELECTED TEXT</button>
+            </div>
+            <div class="field">
+              <button type="button" class="styleBtn secondary" onclick="applyStyleToAllEditable()">APPLY SA LAHAT</button>
+            </div>
+          </div>
+          
+          <div class="style-autofit-note">Auto-fit enabled: even if you change the font and size, it will automatically shrink a little if it no longer fits, so the layout stays clean.</div>
+        </div>
+
+        
+        <div class="upload-card">
+          <div class="upload-card-title">Paste Image Mode</div>
+          <div class="hint">
+            You can copy an image, then click the target area on the waybill where you want to place it:
+            <b>Tracking</b>, <b>Barcode</b>, o <b>QR</b>. Then press <b>Ctrl + V</b>.
+          </div>
+          
+        </div>
+
+        <div class="upload-card">
+          <div class="upload-card-title">Tracking No. Image</div>
+          <div class="field full">
+            <label>Upload Tracking No. Image</label>
+            <input id="trackingUpload" type="file" accept="image/*">
+            <div class="hint">Always check the content inside.</div>
+          </div>
+          <div class="grid2 compact-controls">
+            <div class="field"><label>Tracking Width</label><input id="trackingWidth" type="number" value="300" min="50" max="600"></div>
+            <div class="field"><label>Tracking Height</label><input id="trackingHeight" value="auto" readonly></div>
+            <div class="field"><label>Position X</label><input id="trackingX" type="number" value="0" min="-200" max="200"></div>
+            <div class="field"><label>Position Y</label><input id="trackingY" type="number" value="9" min="-100" max="100"></div>
+          </div>
+        </div>
+
+        <div class="upload-card">
+          <div class="upload-card-title">Barcode Image</div>
+          <div class="field full">
+            <label>Upload Barcode Image</label>
+            <input id="barcodeUpload" type="file" accept="image/*">
+          </div>
+          <div class="field full">
+            <label>Barcode Text</label>
+            <input id="barcodeText" value="P61271FW7MDAK">
+          </div>
+          <div class="grid2 compact-controls">
+            <div class="field"><label>Barcode Width</label><input id="barcodeWidth" type="number" value="510" min="100" max="800"></div>
+            <div class="field"><label>Barcode Height</label><input id="barcodeHeight" type="number" value="85" min="20" max="150"></div>
+            <div class="field"><label>Position X</label><input id="barcodeX" type="number" value="25" min="-300" max="300"></div>
+            <div class="field"><label>Position Y</label><input id="barcodeY" type="number" value="5" min="-120" max="130"></div>
+            <div class="field"><label>Zoom / Palaki</label><input id="barcodeZoom" type="number" value="1" min="0.5" max="3" step="0.05"></div>
+          </div>
+
+        </div>
+
+        <div class="upload-card">
+          <div class="upload-card-title">QR Code Image</div>
+          <div class="field full">
+            <label>Upload QR Code Image</label>
+            <input id="qrUpload" type="file" accept="image/*">
+          </div>
+        </div>
+      </div>
+    </details>
+
+
+    <details class="history-panel" open>
+      <summary><span>H</span> Download / Done History</summary>
+      <div class="history-body">
+        <div class="hint">This auto-saves whenever you download or print. If something is wrong, click <b>LOAD / EDIT</b> to return it to the editor and modify it again.</div>
+        <div class="history-actions">
+          <button type="button" class="saveHistoryBtn" onclick="saveCurrentToHistory('Manual Save')">SAVE CURRENT</button>
+          <button type="button" class="clearHistoryBtn" data-history-clear="1" onclick="clearWaybillHistory(event)">CLEAR HISTORY</button>
+        </div>
+        <div id="historyList" class="history-list"></div>
+      </div>
+    </details>
+
+    <div class="buttons sticky-actions">
+      <button class="download" onclick="downloadJPG()">DOWNLOAD JPG</button>
+      <button class="download thermalJpg" onclick="downloadThermalJPG()">DOWNLOAD THERMAL JPG</button>
+      <button class="printVector" onclick="downloadSVGVector()">DOWNLOAD SVG VECTOR</button>
+      <button class="printVector" onclick="printVectorWaybill()">PRINT / PDF</button>
+      <button class="reset" onclick="location.reload()">RESET</button>
+    </div>
+    <div class="print-only-note">For vector/sharp printing: use PRINT / PDF. If you need an image file, use DOWNLOAD THERMAL JPG.</div>
+    <div class="hint">Thermal tip: use PRINT / PDF for the sharpest output. If you need an image file, use DOWNLOAD THERMAL JPG. Barcode and QR were not changed.</div>
+  </div>
+
+  <div class="preview-scale">
+    <div id="printPage" class="print-page">
+    <div id="waybill" class="waybill">
+
+      <div class="top">
+        <div class="logoBlock">
+          <div class="logo"> <img src="Flash.png" class="logo-img">  </div>
+          <div class="order"><div>Order ID</div><div id="p_orderId" contenteditable="true" spellcheck="false">230411SSGAQDPY</div></div>
+        </div>
+        <div class="serviceBlock">
+          <div id="p_tracking" class="tracking pasteTarget" data-paste-target="tracking"><span id="trackingPlaceholder">Upload Tracking No.</span><span class="paste-helper"></span><img id="trackingImage" class="tracking-img" style="display:none"></div>
+          <div id="p_service" class="service noStyleChange" contenteditable="true" spellcheck="false">SPL_SP</div>
+        </div>
+      </div>
+
+      <div class="barcode pasteTarget" data-paste-target="barcode">
+        <div id="barcodeFake" class="barcodeFake"></div>
+        <img id="barcodeImage" style="display:none">
+        <div id="p_barcodeText" class="barcodeText">P61271FW7MDAK</div><span class="paste-helper"></span>
+      </div>
+
+      <div class="address">
+        <div class="addrRow">
+          <div class="side"><span>BUYER</span></div>
+          <div class="addrContent">
+            <div class="addressText buyerText">
+              <div id="p_buyerLine1" class="line" contenteditable="true" spellcheck="false">2nd Floor, Stall 39, ABC Building, Barangay</div>
+            </div>
+            <div class="locLeft"><div id="p_buyerCity" contenteditable="true" spellcheck="false">Binondo</div><div id="p_buyerArea" contenteditable="true" spellcheck="false">Sta. Cecilia</div></div>
+            <div class="locMid"><div id="p_buyerProvince" contenteditable="true" spellcheck="false">Manila</div><div id="p_buyerRegion" contenteditable="true" spellcheck="false">Metro Manila</div></div>
+            <div class="pdg">PDG</div> <div class="locRight"> <div>HOME</div><div id="p_buyerZip" contenteditable="true" spellcheck="false">1122</div></div>
+          </div>
+        </div>
+        <div class="addrRow seller">
+          <div class="side"><span>SELLER</span></div>
+          <div class="addrContent">
+            <div class="addressText sellerText">
+              <div id="p_sellerName" class="name" contenteditable="true" spellcheck="false">PURELY PRECIOUS 09565612345</div>
+              <div id="p_sellerLine1" class="line" contenteditable="true" spellcheck="false">Baclaran Baclaran Paranaque City Metro Manila 1004</div>
+            </div>
+            <div class="locLeft"><div id="p_sellerCity" contenteditable="true" spellcheck="false">Paranaque City</div><div id="p_sellerArea" contenteditable="true" spellcheck="false">Baclaran</div></div>
+            <div class="locMid"><div id="p_sellerProvince" contenteditable="true" spellcheck="false">Manila</div><div id="p_sellerRegion" contenteditable="true" spellcheck="false">Metro Manila</div></div>
+            <div class="locRight"><div id="p_sellerZip" contenteditable="true" spellcheck="false">1004</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="parcel">
+        <div id="p_areaCode" class="area noStyleChange">A091</div>
+        <div class="qr pasteTarget" data-paste-target="qr">
+          <div id="qrFake" class="qrFake"></div>
+          <img id="qrImage" style="display:none"><span class="paste-helper"></span>
+        </div>
+        <div class="product">
+          <div class="productTop">
+    <div class="remarksLabel">
+        
+        <span id="p_remarks" contenteditable="true" spellcheck="false">VITAMIN E</span>
+    </div>
+</div>
+          <div class="productText">
+            <div class="qtyRow"><b>Product Quantity:</b> <span id="p_quantity" contenteditable="true" spellcheck="false">1</span></div>
+            <div class="weightRow"><b>Weight:</b><span id="p_weight" contenteditable="true" spellcheck="false">0.2g</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="footer">
+        <div class="shop">
+          <img src="SHOPEE.png" class="shopee-img"></div>
+        <div class="attempt delivery"><div class="attemptTitle">Delivery Attempt</div><div class="nums"><div>1</div><div>2</div><div>3</div></div></div>
+        <div class="attempt"><div class="attemptTitle">Return Attempt</div><div class="nums"><div>1</div><div>2</div><div>3</div></div></div>
+      </div>
+    </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"></script>
+<script>
+
+
+function unlockWebsite(){
+  document.body.classList.remove("login-locked");
+  sessionStorage.setItem("waybillLoginOK", "yes");
+}
+
+
+function getLoginActivity(){
+  try{
+    return JSON.parse(localStorage.getItem(LOGIN_ACTIVITY_KEY) || "[]");
+  }catch(e){
+    return [];
+  }
+}
+
+function saveLoginActivity(entry){
+  const logs = getLoginActivity();
+  logs.unshift(entry);
+  localStorage.setItem(LOGIN_ACTIVITY_KEY, JSON.stringify(logs.slice(0, 100)));
+}
+
+async function getApproxLocation(){
+  try{
+    const res = await fetch("https://ipapi.co/json/", {cache:"no-store"});
+    if(!res.ok) throw new Error("Location lookup failed");
+    const data = await res.json();
+    return {
+      ip: data.ip || "",
+      city: data.city || "",
+      region: data.region || "",
+      country: data.country_name || data.country || "",
+      note: "IP-based approximate location only.ISP/VPN/server."
+    };
+  }catch(e){
+    return {ip:"", city:"", region:"", country:"", note:"Not captured ang IP-based location."};
+  }
+}
+
+function getPhilippinesTime(){
+  return new Date().toLocaleString("en-PH", {
+    timeZone:"Asia/Manila",
+    year:"numeric",
+    month:"2-digit",
+    day:"2-digit",
+    hour:"numeric",
+    minute:"2-digit",
+    second:"2-digit",
+    hour12:true
+  });
+}
+
+function getBrowserName(){
+  const ua = navigator.userAgent || "";
+  if(/Edg\//.test(ua)) return "Microsoft Edge";
+  if(/OPR\//.test(ua) || /Opera/.test(ua)) return "Opera";
+  if(/Firefox\//.test(ua)) return "Mozilla Firefox";
+  if(/Chrome\//.test(ua) || /CriOS\//.test(ua)) return "Google Chrome";
+  if(/Safari\//.test(ua) && !/Chrome\//.test(ua)) return "Safari";
+  return "Not captured";
+}
+
+function getPlatformName(){
+  const ua = navigator.userAgent || "";
+  const uaPlatform = navigator.userAgentData && navigator.userAgentData.platform ? navigator.userAgentData.platform : "";
+
+  if(/Windows NT/.test(ua) || /Windows/i.test(uaPlatform)) return "Windows";
+  if(/Android/.test(ua)) return "Android";
+  if(/iPhone/.test(ua)) return "iPhone / iOS";
+  if(/iPad/.test(ua)) return "iPad / iPadOS";
+  if(/Mac OS X/.test(ua) || /macOS|Mac/i.test(uaPlatform)) return "macOS";
+  if(/Linux/.test(ua) || /Linux/i.test(uaPlatform)) return "Linux";
+  return uaPlatform || navigator.platform || "Not captured";
+}
+
+function getBrowserLocationWithPermission(){
+  return new Promise(resolve => {
+    if(!navigator.geolocation){
+      resolve({status:"unavailable", note:"Geolocation is not supported by this browser."});
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      pos => {
+        const c = pos.coords || {};
+        resolve({
+          status:"granted",
+          latitude: typeof c.latitude === "number" ? Number(c.latitude.toFixed(4)) : "",
+          longitude: typeof c.longitude === "number" ? Number(c.longitude.toFixed(4)) : "",
+          accuracyMeters: c.accuracy ? Math.round(c.accuracy) : "",
+          note:"Browser location permission-based. Mas accurate ito kaysa IP-based location, pero hindi exact address."
+        });
+      },
+      err => {
+        resolve({
+          status:"denied_or_failed",
+          note: err && err.message ? err.message : "N/A"
+        });
+      },
+      {
+        enableHighAccuracy:true,
+        timeout:8000,
+        maximumAge:600000
+      }
+    );
+  });
+}
+
+
+function shorten(text, max){
+  text = String(text || "");
+  return text.length > max ? text.slice(0, max - 3) + "..." : text;
+}
+
+async function sendDiscordLoginNotification(entry){
+  if(!DISCORD_WEBHOOK_URL || DISCORD_WEBHOOK_URL.trim() === "") return;
+
+  const loc = entry.location || {};
+  const gps = entry.browserLocation || {};
+  const locationText = [loc.city, loc.region, loc.country].filter(Boolean).join(", ") || "Not captured";
+  let gpsText = "No pinayagan / hindi nakuha";
+
+  if(gps.status === "granted"){
+    gpsText = `Lat: ${gps.latitude}, Lng: ${gps.longitude}`;
+    if(gps.accuracyMeters) gpsText += ` | Accuracy: ~${gps.accuracyMeters}m`;
+    gpsText += "\nSource: Browser permission-based geolocation";
+  }else if(gps.note){
+    gpsText = gps.note;
+  }
+
+  const payload = {
+    username: "LOGIN ALERT!!!",
+    content: "🔐 LOGIN!",
+    embeds: [
+      {
+        title: "Successful Login",
+        color: 3066993,
+        fields: [
+          {name: "User / Pangalan", value: shorten(entry.username, 200) || "Unknown", inline: true},
+          {name: "Oras", value: shorten(entry.loginTime, 200), inline: true},
+          {name: "Browser", value: shorten(entry.browser || "Not captured", 100), inline: true},
+          {name: "Platform", value: shorten(entry.platform || "Not captured", 100), inline: true},
+          {name: "Timezone", value: "Philippines UTC+8 / Asia/Manila", inline: true},
+          {name: "Detected Timezone", value: shorten(entry.detectedTimezone || "Not captured", 100), inline: true},
+          {name: "IP-based Approx Location", value: shorten(locationText, 250), inline: false},
+          {name: "Location Note", value: shorten(loc.note || "IP-based approximate location only.", 500), inline: false},
+          {name: "Browser Location Permission", value: shorten(gpsText, 600), inline: false},
+          {name: "IP", value: shorten(loc.ip || "Not captured", 100), inline: true},
+          {name: "Raw Browser Info", value: shorten(entry.device || "Not captured", 900), inline: false}
+        ],
+        footer: {text:"Location is for security log only. IP-based location can be wrong; browser geolocation requires permission."},
+        timestamp: entry.isoTime
+      }
+    ]
+  };
+
+  try{
+    await fetch(DISCORD_WEBHOOK_URL, {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify(payload)
+    });
+  }catch(e){
+    console.warn("No na-send sa Discord webhook.", e);
+  }
+}
+
+
+async function recordLoginActivity(username){
+  const location = await getApproxLocation();
+  const browserLocation = await getBrowserLocationWithPermission();
+  const entry = {
+    username: username || "Unknown",
+    loginTime: getPhilippinesTime(),
+    isoTime: new Date().toISOString(),
+    timezone: "Philippines UTC+8 / Asia/Manila",
+    detectedTimezone: Intl.DateTimeFormat().resolvedOptions().timeZone || "",
+    browser: getBrowserName(),
+    device: navigator.userAgent || "",
+    platform: getPlatformName(),
+    rawPlatform: navigator.platform || "",
+    language: navigator.language || "",
+    location: location,
+    browserLocation: browserLocation
+  };
+
+  saveLoginActivity(entry);
+  await sendDiscordLoginNotification(entry);
+
+  if(LOGIN_LOG_WEBHOOK_URL && LOGIN_LOG_WEBHOOK_URL.trim() !== ""){
+    try{
+      await fetch(LOGIN_LOG_WEBHOOK_URL, {
+        method:"POST",
+        mode:"no-cors",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify(entry)
+      });
+    }catch(e){
+      console.warn("No na-send ang login log online.", e);
+    }
+  }
+}
+
+
+function showLoginLoading(){
+  const form = document.getElementById("loginForm");
+  const btn = document.getElementById("loginBtn");
+  if(form) form.classList.add("loading");
+  if(btn) btn.textContent = "PLEASE WAIT...";
+}
+
+function hideLoginLoading(){
+  const form = document.getElementById("loginForm");
+  const btn = document.getElementById("loginBtn");
+  if(form) form.classList.remove("loading");
+  if(btn) btn.textContent = "LOGIN";
+}
+
+function logoutWebsite(){
+  window.location.href = "/.netlify/functions/logout";
+}
+
+window.addEventListener("DOMContentLoaded", () => {
+  const form = document.getElementById("loginForm");
+  const nameInput = document.getElementById("loginName");
+  const passInput = document.getElementById("loginPassword");
+  const errorBox = document.getElementById("loginError");
+
+  if(sessionStorage.getItem("waybillLoginOK") === "yes"){
+    unlockWebsite();
+    return;
+  }
+
+  if(nameInput) nameInput.focus();
+
+  if(form){
+    form.addEventListener("submit", e => {
+      e.preventDefault();
+
+      if(passInput && passInput.value === WEBSITE_PASSWORD){
+        if(errorBox) errorBox.style.display = "none";
+        showLoginLoading();
+        const username = nameInput ? nameInput.value.trim() : "Unknown";
+        recordLoginActivity(username);
+        setTimeout(() => {
+          unlockWebsite();
+          hideLoginLoading();
+        }, 900);
+      }else{
+        hideLoginLoading();
+        if(errorBox) errorBox.style.display = "block";
+        if(passInput){
+          passInput.value = "";
+          passInput.focus();
+        }
+      }
+    });
+  }
+});
+// ==========================================================
+
+const ids=["barcodeText"];
+function sync(id){
+  const input=document.getElementById(id);
+  const output=document.getElementById("p_"+id);
+  if(input && output) output.textContent=input.value;
+}
+ids.forEach(id=>{
+  sync(id);
+  const input=document.getElementById(id);
+  if(input) input.addEventListener("input",()=>sync(id));
+})
+
+function upload(inputId,imgId,fakeId){
+  document.getElementById(inputId).addEventListener("change",e=>{
+    const f=e.target.files[0]; if(!f)return;
+    const r=new FileReader();
+    r.onload=ev=>{
+      document.getElementById(imgId).src=ev.target.result;
+      document.getElementById(imgId).style.display="block";
+      document.getElementById(fakeId).style.display="none";
+    };
+    r.readAsDataURL(f);
+  });
+}
+upload("barcodeUpload","barcodeImage","barcodeFake");
+upload("qrUpload","qrImage","qrFake");
+
+function updateBarcodeImageStyle(){
+  const barcodeImg = document.getElementById("barcodeImage");
+  const fake = document.getElementById("barcodeFake");
+  const w = document.getElementById("barcodeWidth").value || 510;
+  const h = document.getElementById("barcodeHeight").value || 70;
+  const x = document.getElementById("barcodeX").value || 20;
+  const y = document.getElementById("barcodeY").value || 4;
+  const zoom = document.getElementById("barcodeZoom").value || 1.22;
+
+  [barcodeImg, fake].forEach(el => {
+    el.style.width = w + "px";
+    el.style.height = h + "px";
+    el.style.left = x + "px";
+    el.style.top = y + "px";
+    el.style.objectFit = "fill";
+    el.style.transformOrigin = "top left";
+    el.style.transform = "scale(" + zoom + ")";
+  });
+}
+
+["barcodeWidth","barcodeHeight","barcodeX","barcodeY","barcodeZoom"].forEach(id=>{
+  document.getElementById(id).addEventListener("input", updateBarcodeImageStyle);
+});
+updateBarcodeImageStyle();
+
+function updateTrackingImageStyle(){
+  const img = document.getElementById("trackingImage");
+  const w = document.getElementById("trackingWidth").value || 300;
+  const x = document.getElementById("trackingX").value || 0;
+  const y = document.getElementById("trackingY").value || 0;
+
+  img.style.width = w + "px";
+  img.style.height = "auto"; // importante: hindi na ini-stretch pataas
+  img.style.left = x + "px";
+  img.style.top = y + "px";
+}
+
+["trackingWidth","trackingX","trackingY"].forEach(id=>{
+  document.getElementById(id).addEventListener("input", updateTrackingImageStyle);
+});
+updateTrackingImageStyle();
+
+document.getElementById("trackingUpload").addEventListener("change", e=>{
+  const f=e.target.files[0]; if(!f)return;
+  const r=new FileReader();
+  r.onload=ev=>{
+    const img=document.getElementById("trackingImage");
+    img.src=ev.target.result;
+    img.style.display="block";
+    document.getElementById("trackingPlaceholder").style.display="none";
+    updateTrackingImageStyle();
+  };
+  r.readAsDataURL(f);
+});
+
+
+function applyAddressTextStyle(){
+  const buyerSize = document.getElementById("buyerAddressSize")?.value || 16;
+  const sellerSize = document.getElementById("sellerAddressSize")?.value || 14;
+  const buyerFont = document.getElementById("buyerAddressFont")?.value || "Arial, Helvetica, sans-serif";
+  const sellerFont = document.getElementById("sellerAddressFont")?.value || "Arial, Helvetica, sans-serif";
+
+  document.querySelectorAll(".buyerText .line, .buyerText .name").forEach(el=>{
+    el.style.fontSize = buyerSize + "px";
+    el.style.fontFamily = buyerFont;
+  });
+
+  document.querySelectorAll(".sellerText .line, .sellerText .name").forEach(el=>{
+    el.style.fontSize = sellerSize + "px";
+    el.style.fontFamily = sellerFont;
+  });
+
+  fitBuyerAddressToBox();
+}
+
+function fitBuyerAddressToBox(){
+  const box = document.querySelector(".buyerText");
+  const line = document.getElementById("p_buyerLine1");
+  if(!box || !line) return;
+
+  // Preserve exact pasted text, but shrink font until it fits the buyer box.
+  line.style.whiteSpace = "pre-wrap";
+  line.style.overflowWrap = "anywhere";
+  line.style.wordBreak = "break-word";
+  line.style.lineHeight = "1.05";
+
+  const maxSize = parseInt(document.getElementById("buyerAddressSize")?.value || "16", 10);
+  let size = Math.max(8, Math.min(16, maxSize));
+  line.style.fontSize = size + "px";
+
+  // Paliitin kung lumalagpas. No nito pinuputol ang text.
+  for(let i = 0; i < 20; i++){
+    const tooTall = line.scrollHeight > box.clientHeight;
+    const tooWide = line.scrollWidth > box.clientWidth;
+    if(!tooTall && !tooWide) break;
+    if(size <= 8) break;
+    size -= 1;
+    line.style.fontSize = size + "px";
+  }
+}
+
+function setupPlainTextPasteForBuyerAddress(){
+  const line = document.getElementById("p_buyerLine1");
+  if(!line || line.dataset.plainPasteReady === "1") return;
+  line.dataset.plainPasteReady = "1";
+
+  line.addEventListener("paste", e => {
+    e.preventDefault();
+    const text = (e.clipboardData || window.clipboardData).getData("text/plain");
+    document.execCommand("insertText", false, text);
+    setTimeout(fitBuyerAddressToBox, 0);
+  });
+
+  line.addEventListener("input", () => {
+    setTimeout(fitBuyerAddressToBox, 0);
+  });
+}
+
+["buyerAddressSize","sellerAddressSize","buyerAddressFont","sellerAddressFont"].forEach(id=>{
+  const el = document.getElementById(id);
+  if(el) el.addEventListener("input", applyAddressTextStyle);
+  if(el) el.addEventListener("change", applyAddressTextStyle);
+});
+applyAddressTextStyle();
+setupPlainTextPasteForBuyerAddress();
+fitBuyerAddressToBox();
+
+
+let selectedEditable = null;
+
+const fixedStyleIds = new Set(['p_areaCode','p_service']);
+
+const styleTargetIds = [
+  'p_orderId',
+  'p_buyerLine1','p_buyerCity','p_buyerArea','p_buyerProvince','p_buyerRegion','p_buyerZip',
+  'p_sellerName','p_sellerLine1','p_sellerCity','p_sellerArea','p_sellerProvince','p_sellerRegion','p_sellerZip',
+  'p_remarks','p_quantity','p_weight'
+];
+
+const editableConfig = {
+  p_orderId:{min:8,max:30,multiline:false},
+  p_buyerLine1:{min:8,max:22,multiline:true},
+  p_buyerCity:{min:8,max:28,multiline:false},
+  p_buyerArea:{min:8,max:28,multiline:false},
+  p_buyerProvince:{min:8,max:28,multiline:false},
+  p_buyerRegion:{min:8,max:28,multiline:false},
+  p_buyerZip:{min:8,max:24,multiline:false},
+  p_sellerName:{min:8,max:18,multiline:true},
+  p_sellerLine1:{min:8,max:18,multiline:true},
+  p_sellerCity:{min:8,max:28,multiline:false},
+  p_sellerArea:{min:8,max:28,multiline:false},
+  p_sellerProvince:{min:8,max:28,multiline:false},
+  p_sellerRegion:{min:8,max:28,multiline:false},
+  p_sellerZip:{min:8,max:24,multiline:false},
+  p_remarks:{min:8,max:24,multiline:false},
+  p_quantity:{min:8,max:24,multiline:false},
+  p_weight:{min:8,max:24,multiline:false}
+};
+
+function normalizeFontFamily(fontFamily){
+  return (fontFamily || "Arial, Helvetica, sans-serif").replace(/["']/g, "");
+}
+
+function getConfig(el){
+  return editableConfig[el.id] || {min:8,max:18,multiline:false};
+}
+
+function clamp(value,min,max){
+  value = parseFloat(value);
+  if(isNaN(value)) return min;
+  return Math.max(min, Math.min(max, value));
+}
+
+function setSelectedEditable(el){
+  if(!el || !el.matches || !el.matches('[contenteditable="true"]')) return;
+  if(selectedEditable) selectedEditable.classList.remove('selectedEditable');
+  selectedEditable = el;
+  selectedEditable.classList.add('selectedEditable');
+
+  const computed = window.getComputedStyle(el);
+  const sizeInput = document.getElementById('selectedTextSize');
+  const fontSelect = document.getElementById('selectedTextFont');
+  if(sizeInput) sizeInput.value = Math.round(parseFloat(computed.fontSize)) || 16;
+  if(fontSelect){
+    const currentFont = normalizeFontFamily(computed.fontFamily).toLowerCase();
+    const found = Array.from(fontSelect.options).find(opt => currentFont.includes(opt.textContent.toLowerCase().split(' ')[0]));
+    if(found) fontSelect.value = found.value;
+  }
+}
+
+function applyStyleToElement(el, requestedSize, font){
+  if(!el || fixedStyleIds.has(el.id)) return;
+  const cfg = getConfig(el);
+  const size = clamp(requestedSize, cfg.min, cfg.max);
+
+  el.style.fontSize = size + 'px';
+  el.style.fontFamily = font || 'Arial, Helvetica, sans-serif';
+  el.style.lineHeight = cfg.multiline ? '1.08' : '1';
+  el.style.whiteSpace = cfg.multiline ? 'normal' : 'nowrap';
+  el.style.wordBreak = cfg.multiline ? 'break-word' : 'normal';
+  el.style.overflowWrap = cfg.multiline ? 'anywhere' : 'normal';
+  el.style.overflow = 'hidden';
+  return size;
+}
+
+document.querySelectorAll('[contenteditable="true"]').forEach(el=>{
+  el.addEventListener('focus',()=>setSelectedEditable(el));
+  el.addEventListener('click',()=>setSelectedEditable(el));
+});
+
+function applyStyleToSelectedEditable(){
+  if(!selectedEditable) return;
+  if(fixedStyleIds.has(selectedEditable.id)){
+    alert('Fixed ang font/size ng field na ito. No siya kasama sa pagbabago.');
+    return;
+  }
+  const sizeInput = document.getElementById('selectedTextSize');
+  const requestedSize = sizeInput?.value || 16;
+  const font = document.getElementById('selectedTextFont')?.value || 'Arial, Helvetica, sans-serif';
+  const actualSize = applyStyleToElement(selectedEditable, requestedSize, font);
+  if(sizeInput && actualSize) sizeInput.value = Math.round(actualSize);
+}
+
+function applyStyleToAllEditable(){
+  const size = document.getElementById('selectedTextSize')?.value || 16;
+  const font = document.getElementById('selectedTextFont')?.value || 'Arial, Helvetica, sans-serif';
+
+  // Explicit list para siguradong madadamay lahat ng fill-up text,
+  // maliban sa fixed fields: SPL_SP at A091.
+  styleTargetIds.forEach(id=>{
+    const el = document.getElementById(id);
+    if(el && !fixedStyleIds.has(id)) applyStyleToElement(el, size, font);
+  });
+
+  if(selectedEditable) setSelectedEditable(selectedEditable);
+}
+
+
+['selectedTextSize','selectedTextFont'].forEach(id=>{
+  const el=document.getElementById(id);
+  if(el) el.addEventListener('input', applyStyleToSelectedEditable);
+  if(el) el.addEventListener('change', applyStyleToSelectedEditable);
+});
+
+// I-lock ulit ang style ng fixed fields kapag nag-load
+window.addEventListener('load', ()=>{
+  const service=document.getElementById('p_service');
+  const area=document.getElementById('p_areaCode');
+  if(service){
+    service.style.fontFamily='Arial, Helvetica, sans-serif';
+    service.style.fontSize='41px';
+  }
+  if(area){
+    area.style.fontFamily='Arial, Helvetica, sans-serif';
+    area.style.fontSize='54px';
+    area.style.fontWeight='900';
+    area.style.background='#000';
+    area.style.color='#fff';
+  }
+});
+
+
+function updateAreaCodeFromForm(){
+  const input = document.getElementById("areaCodeInput");
+  const output = document.getElementById("p_areaCode");
+  if(input && output) output.textContent = input.value || "";
+}
+window.addEventListener("load", updateAreaCodeFromForm);
+
+
+// PASTE IMAGE MODE: i-click ang Tracking / Barcode / QR, tapos Ctrl+V
+let currentPasteTarget = null;
+
+function setPasteTarget(targetName){
+  currentPasteTarget = targetName;
+  document.querySelectorAll('.pasteTarget').forEach(el=>{
+    el.classList.toggle('selectedPasteTarget', el.dataset.pasteTarget === targetName);
+  });
+}
+
+document.querySelectorAll('.pasteTarget').forEach(el=>{
+  el.addEventListener('click', ()=>{
+    setPasteTarget(el.dataset.pasteTarget);
+  });
+});
+
+function setImageFromPastedFile(targetName, file){
+  if(!file || !file.type || !file.type.startsWith('image/')) return;
+
+  const reader = new FileReader();
+
+  reader.onload = ev => {
+    if(targetName === 'tracking'){
+      const img = document.getElementById('trackingImage');
+      const placeholder = document.getElementById('trackingPlaceholder');
+
+      if(img){
+        img.src = ev.target.result;
+        img.style.display = 'block';
+
+        if(placeholder) placeholder.style.display = 'none';
+        if(typeof updateTrackingImageStyle === 'function') updateTrackingImageStyle();
+      }
+    }
+
+    if(targetName === 'barcode'){
+      const img = document.getElementById('barcodeImage');
+      const fake = document.getElementById('barcodeFake');
+
+      if(img){
+        img.src = ev.target.result;
+        img.style.display = 'block';
+
+        if(fake) fake.style.display = 'none';
+        if(typeof updateBarcodeImageStyle === 'function') updateBarcodeImageStyle();
+      }
+    }
+
+    if(targetName === 'qr'){
+      const img = document.getElementById('qrImage');
+      const fake = document.getElementById('qrFake');
+
+      if(img){
+        img.src = ev.target.result;
+        img.style.display = 'block';
+
+        if(fake) fake.style.display = 'none';
+      }
+    }
+  };
+
+  reader.readAsDataURL(file);
+}
+
+document.addEventListener('paste', e=>{
+  const items = e.clipboardData && e.clipboardData.items;
+  if(!items) return;
+
+  let imageFile = null;
+
+  for(const item of items){
+    if(item.type && item.type.startsWith('image/')){
+      imageFile = item.getAsFile();
+      break;
+    }
+  }
+
+  if(!imageFile) return;
+
+  if(!currentPasteTarget){
+    alert('I-click muna ang Tracking, Barcode, o QR box sa waybill bago mag-paste.');
+    return;
+  }
+
+  e.preventDefault();
+  setImageFromPastedFile(currentPasteTarget, imageFile);
+});
+
+// ================= DOWNLOAD / DONE HISTORY =================
+const WAYBILL_HISTORY_KEY = "waybillEditorDownloadHistory_v1";
+const WAYBILL_HISTORY_LIMIT = 30;
+
+const historyEditableIds = [
+  'p_orderId','p_service','p_buyerLine1','p_buyerCity','p_buyerArea','p_buyerProvince','p_buyerRegion','p_buyerZip',
+  'p_sellerName','p_sellerLine1','p_sellerCity','p_sellerArea','p_sellerProvince','p_sellerRegion','p_sellerZip',
+  'p_remarks','p_quantity','p_weight','p_areaCode','p_barcodeText'
+];
+
+const historyControlIds = [
+  'areaCodeInput','barcodeText','barcodeWidth','barcodeHeight','barcodeX','barcodeY','barcodeZoom',
+  'trackingWidth','trackingX','trackingY','buyerAddressSize','sellerAddressSize','buyerAddressFont','sellerAddressFont',
+  'selectedTextSize','selectedTextFont'
+];
+
+function readWaybillHistory(){
+  try{
+    return JSON.parse(localStorage.getItem(WAYBILL_HISTORY_KEY) || '[]');
+  }catch(e){
+    return [];
+  }
+}
+
+function writeWaybillHistory(list){
+  localStorage.setItem(WAYBILL_HISTORY_KEY, JSON.stringify(list));
+}
+
+function getImageState(imgId, fakeId, placeholderId){
+  const img = document.getElementById(imgId);
+  const fake = fakeId ? document.getElementById(fakeId) : null;
+  const placeholder = placeholderId ? document.getElementById(placeholderId) : null;
+  return {
+    src: img && img.src && img.src.startsWith('data:image') ? img.src : '',
+    display: img ? img.style.display : '',
+    fakeDisplay: fake ? fake.style.display : '',
+    placeholderDisplay: placeholder ? placeholder.style.display : ''
+  };
+}
+
+function setImageState(imgId, fakeId, placeholderId, state){
+  const img = document.getElementById(imgId);
+  const fake = fakeId ? document.getElementById(fakeId) : null;
+  const placeholder = placeholderId ? document.getElementById(placeholderId) : null;
+
+  if(img){
+    if(state && state.src){
+      img.src = state.src;
+      img.style.display = state.display || 'block';
+    }else{
+      img.removeAttribute('src');
+      img.style.display = 'none';
+    }
+  }
+  if(fake) fake.style.display = state && state.src ? 'none' : '';
+  if(placeholder) placeholder.style.display = state && state.src ? 'none' : '';
+}
+
+function collectWaybillState(saveType){
+  const fields = {};
+  const fieldStyles = {};
+  historyEditableIds.forEach(id => {
+    const el = document.getElementById(id);
+    if(el){
+      fields[id] = el.textContent;
+      fieldStyles[id] = {
+        fontSize: el.style.fontSize || '',
+        fontFamily: el.style.fontFamily || '',
+        lineHeight: el.style.lineHeight || '',
+        whiteSpace: el.style.whiteSpace || '',
+        wordBreak: el.style.wordBreak || '',
+        overflowWrap: el.style.overflowWrap || ''
+      };
+    }
+  });
+
+  const controls = {};
+  historyControlIds.forEach(id => {
+    const el = document.getElementById(id);
+    if(el) controls[id] = el.value;
+  });
+
+  const now = new Date();
+  const orderId = (fields.p_orderId || '').trim() || 'No Order ID';
+  const barcode = (fields.p_barcodeText || controls.barcodeText || '').trim();
+  const buyer = (fields.p_buyerLine1 || '').trim();
+
+  return {
+    id: 'hist_' + Date.now(),
+    savedAt: now.toISOString(),
+    saveType: saveType || 'Downloaded',
+    title: orderId + (barcode ? ' / ' + barcode : ''),
+    buyerPreview: buyer.slice(0, 80),
+    fields,
+    fieldStyles,
+    controls,
+    images:{
+      tracking: getImageState('trackingImage', null, 'trackingPlaceholder'),
+      barcode: getImageState('barcodeImage', 'barcodeFake', null),
+      qr: getImageState('qrImage', 'qrFake', null)
+    }
+  };
+}
+
+function saveCurrentToHistory(saveType){
+  const item = collectWaybillState(saveType);
+  const list = readWaybillHistory();
+  list.unshift(item);
+  while(list.length > WAYBILL_HISTORY_LIMIT) list.pop();
+
+  try{
+    writeWaybillHistory(list);
+    renderWaybillHistory();
+    return true;
+  }catch(e){
+    alert('No na-save sa history. Posibleng puno na ang browser storage dahil malaki ang barcode/QR/tracking image. Subukan burahin muna ang ibang history.');
+    return false;
+  }
+}
+
+function applyWaybillState(item){
+  if(!item) return;
+
+  Object.entries(item.fields || {}).forEach(([id, value]) => {
+    const el = document.getElementById(id);
+    if(el) el.textContent = value;
+  });
+
+  Object.entries(item.fieldStyles || {}).forEach(([id, styles]) => {
+    const el = document.getElementById(id);
+    if(el && styles){
+      Object.entries(styles).forEach(([prop, value]) => {
+        if(value) el.style[prop] = value;
+      });
+    }
+  });
+
+  Object.entries(item.controls || {}).forEach(([id, value]) => {
+    const el = document.getElementById(id);
+    if(el) el.value = value;
+  });
+
+  setImageState('trackingImage', null, 'trackingPlaceholder', item.images && item.images.tracking);
+  setImageState('barcodeImage', 'barcodeFake', null, item.images && item.images.barcode);
+  setImageState('qrImage', 'qrFake', null, item.images && item.images.qr);
+
+  if(typeof updateBarcodeImageStyle === 'function') updateBarcodeImageStyle();
+  if(typeof updateTrackingImageStyle === 'function') updateTrackingImageStyle();
+  if(typeof applyAddressTextStyle === 'function') applyAddressTextStyle();
+  if(typeof updateAreaCodeFromForm === 'function') updateAreaCodeFromForm();
+
+  alert('Na-load na sa editor. Pwede mo na i-edit ulit bago i-download.');
+}
+
+function loadHistoryItem(id){
+  const list = readWaybillHistory();
+  const item = list.find(x => x.id === id);
+  if(item) applyWaybillState(item);
+}
+
+function deleteHistoryItem(id, event){
+  if(event){
+    event.preventDefault();
+    event.stopPropagation();
+  }
+  const listBefore = readWaybillHistory();
+  const listAfter = listBefore.filter(x => String(x.id) !== String(id));
+
+  if(listAfter.length === listBefore.length){
+    alert('No makita ang history item na buburahin. I-refresh ang page at subukan ulit.');
+    return false;
+  }
+
+  writeWaybillHistory(listAfter);
+  renderWaybillHistory();
+  return false;
+}
+
+function clearWaybillHistory(event){
+  if(event){
+    event.preventDefault();
+    event.stopPropagation();
+  }
+  localStorage.removeItem(WAYBILL_HISTORY_KEY);
+  renderWaybillHistory();
+  return false;
+}
+
+// Siguraduhin na accessible ang functions kahit galing sa onclick/dynamic buttons.
+window.deleteHistoryItem = deleteHistoryItem;
+window.clearWaybillHistory = clearWaybillHistory;
+
+function formatHistoryDate(iso){
+  try{
+    return new Date(iso).toLocaleString('tl-PH', {
+      year:'numeric', month:'short', day:'2-digit', hour:'2-digit', minute:'2-digit'
+    });
+  }catch(e){
+    return iso || '';
+  }
+}
+
+function renderWaybillHistory(){
+  const box = document.getElementById('historyList');
+  if(!box) return;
+
+  const list = readWaybillHistory();
+  if(!list.length){
+    box.innerHTML = '<div class="history-empty">Wala pang history. Mag-download, mag-print, o pindutin ang SAVE CURRENT.</div>';
+    return;
+  }
+
+  box.innerHTML = '';
+  list.forEach(item => {
+    const card = document.createElement('div');
+    card.className = 'history-item';
+
+    const title = document.createElement('div');
+    title.className = 'history-title';
+    title.textContent = item.title || 'Saved Waybill';
+
+    const meta = document.createElement('div');
+    meta.className = 'history-meta';
+    meta.textContent = (item.saveType || 'Saved') + ' • ' + formatHistoryDate(item.savedAt) + (item.buyerPreview ? ' • ' + item.buyerPreview : '');
+
+    const buttons = document.createElement('div');
+    buttons.className = 'history-buttons';
+
+    const loadBtn = document.createElement('button');
+    loadBtn.type = 'button';
+    loadBtn.className = 'loadHistoryBtn';
+    loadBtn.textContent = 'LOAD / EDIT';
+    loadBtn.onclick = () => loadHistoryItem(item.id);
+
+    const delBtn = document.createElement('button');
+    delBtn.type = 'button';
+    delBtn.className = 'deleteHistoryBtn';
+    delBtn.textContent = 'DELETE';
+    delBtn.dataset.historyDeleteId = item.id;
+    delBtn.onclick = (event) => deleteHistoryItem(item.id, event);
+
+    buttons.appendChild(loadBtn);
+    buttons.appendChild(delBtn);
+    card.appendChild(title);
+    card.appendChild(meta);
+    card.appendChild(buttons);
+    box.appendChild(card);
+  });
+}
+
+
+// Backup listener: kapag hindi gumana ang inline onclick, ito ang sasalo sa DELETE / CLEAR.
+document.addEventListener('click', function(event){
+  const deleteButton = event.target.closest('[data-history-delete-id]');
+  if(deleteButton){
+    deleteHistoryItem(deleteButton.dataset.historyDeleteId, event);
+    return;
+  }
+
+  const clearButton = event.target.closest('[data-history-clear]');
+  if(clearButton){
+    clearWaybillHistory(event);
+  }
+});
+
+window.addEventListener('DOMContentLoaded', renderWaybillHistory);
+// ===========================================================
+
+function printVectorWaybill(){
+  saveCurrentToHistory("Print / PDF");
+  window.print();
+}
+
+function downloadSVGVector(){
+  saveCurrentToHistory("SVG Vector Download");
+  const printPage = document.getElementById("printPage");
+  const clone = printPage.cloneNode(true);
+
+  // Fixed size: waybill 560x770 + 12px white margin per side = 584x794
+  const width = 584;
+  const height = 794;
+
+  clone.setAttribute("xmlns", "http://www.w3.org/1999/xhtml");
+  clone.style.width = width + "px";
+  clone.style.height = height + "px";
+  clone.style.margin = "0";
+
+  const css = Array.from(document.styleSheets)
+    .map(sheet => {
+      try {
+        return Array.from(sheet.cssRules).map(rule => rule.cssText).join("\n");
+      } catch(e) {
+        return "";
+      }
+    })
+    .join("\n");
+
+  const xhtml = new XMLSerializer().serializeToString(clone);
+  const svg = `<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
+  <foreignObject x="0" y="0" width="100%" height="100%">
+    <div xmlns="http://www.w3.org/1999/xhtml">
+      <style>${css}
+
+/* DOWNLOAD HISTORY PANEL */
+.history-panel{
+  margin:12px;
+  border:1px solid #d6dbe4;
+  border-radius:12px;
+  background:#fff;
+  overflow:hidden;
+  box-shadow:0 4px 14px rgba(15,23,42,.06);
+}
+.history-panel summary{
+  list-style:none;
+  cursor:pointer;
+  padding:13px 14px;
+  font-size:15px;
+  font-weight:900;
+  display:flex;
+  align-items:center;
+  gap:10px;
+  background:#fff;
+  border-bottom:1px solid #eef1f5;
+}
+.history-panel summary::-webkit-details-marker{display:none}
+.history-panel summary span{
+  width:26px;
+  height:26px;
+  border-radius:50%;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  background:#7c2d12;
+  color:#fff;
+  font-size:13px;
+}
+.history-body{padding:12px}
+.history-actions{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:8px;
+  margin-bottom:10px;
+}
+.history-actions button,
+.history-item button{
+  height:34px;
+  border-radius:8px;
+  font-size:12px;
+}
+.saveHistoryBtn{background:#7c2d12}
+.clearHistoryBtn{background:#6b7280}
+.history-list{
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+  max-height:260px;
+  overflow:auto;
+}
+.history-empty{
+  font-size:12px;
+  color:#6b7280;
+  background:#f9fafb;
+  border:1px dashed #cbd5e1;
+  border-radius:9px;
+  padding:10px;
+  text-align:center;
+}
+.history-item{
+  border:1px solid #e5e7eb;
+  border-radius:10px;
+  padding:9px;
+  background:#f8fafc;
+}
+.history-title{
+  font-size:13px;
+  font-weight:900;
+  color:#111827;
+  margin-bottom:3px;
+  word-break:break-word;
+}
+.history-meta{
+  font-size:11px;
+  color:#4b5563;
+  line-height:1.35;
+  margin-bottom:7px;
+}
+.history-buttons{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:7px;
+}
+.loadHistoryBtn{background:#15803d}
+.deleteHistoryBtn{background:#b91c1c}
+@media print{
+  .history-panel{display:none !important;}
+}
+
+</style>
+      ${xhtml}
+    </div>
+  </foreignObject>
+</svg>`;
+
+  const blob = new Blob([svg], {type:"image/svg+xml;charset=utf-8"});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.download = "waybill-vector.svg";
+  a.href = url;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+
+function downloadThermalJPG(){
+  saveCurrentToHistory("Thermal JPG Download");
+  const target = document.getElementById("printPage");
+  if(!target){
+    alert("No makita ang printPage.");
+    return;
+  }
+
+  // Mas mataas na scale para mas malinaw kapag picture/JPG ang ipi-print.
+  // No nito binabago ang barcode at QR; mas mataas lang ang resolution ng export.
+  html2canvas(target,{
+    scale:6,
+    backgroundColor:"#fff",
+    useCORS:true,
+    allowTaint:true,
+    logging:false,
+    removeContainer:true
+  }).then(canvas=>{
+    const ctx = canvas.getContext("2d");
+    if(ctx){
+      ctx.imageSmoothingEnabled = false;
+    }
+    const a=document.createElement("a");
+    a.download="waybill-thermal-high-res.jpg";
+    a.href=canvas.toDataURL("image/jpeg",0.98);
+    a.click();
+  });
+}
+
+
+function downloadJPG(){
+  saveCurrentToHistory("JPG Download");
+  html2canvas(document.getElementById("printPage"),{scale:3,backgroundColor:"#fff"}).then(canvas=>{
+    const a=document.createElement("a");
+    a.download="waybill-raster-copy.jpg";
+    a.href=canvas.toDataURL("image/jpg");
+    a.click();
+  });
+}
+
+// ================= BULK PDF WAYBILL IMPORTER =================
+let extractedPdfWaybills = [];
+let selectedPdfWaybillIndex = 0;
+
+if(window.pdfjsLib){
+  pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.worker.min.js";
+}
+
+function setBulkPdfStatus(msg){
+  const el = document.getElementById("bulkPdfStatus");
+  if(el) el.textContent = msg;
+}
+
+
+function cleanPdfText(text){
+  return String(text || "")
+    .replace(/\u00a0/g, " ")
+    .replace(/[ \t]+/g, " ")
+    .replace(/\n[ \t]+/g, "\n")
+    .replace(/[ \t]+\n/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
+function pickFirst(text, patterns, fallback=""){
+  for(const re of patterns){
+    const m = text.match(re);
+    if(m && (m[1] || m[0])) return String(m[1] || m[0]).trim();
+  }
+  return fallback;
+}
+
+function getCleanLines(text){
+  return cleanPdfText(text)
+    .split(/\n+/)
+    .map(s => cleanPdfText(s))
+    .filter(Boolean);
+}
+
+function uniqueLines(lines){
+  const seen = new Set();
+  const out = [];
+  lines.forEach(line => {
+    const key = line.toUpperCase();
+    if(!seen.has(key)){
+      seen.add(key);
+      out.push(line);
+    }
+  });
+  return out;
+}
+
+function splitBlock(text, startWords, endWords){
+  const upper = text.toUpperCase();
+  let start = -1;
+  for(const w of startWords){
+    const i = upper.indexOf(w.toUpperCase());
+    if(i >= 0){ start = i + w.length; break; }
+  }
+  if(start < 0) return "";
+  let end = text.length;
+  for(const w of endWords){
+    const i = upper.indexOf(w.toUpperCase(), start);
+    if(i >= 0 && i < end) end = i;
+  }
+  return cleanPdfText(text.slice(start, end));
+}
+
+function escapeRegExp(s){
+  return String(s || "").replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function stripKnownCodes(line, codes=[]){
+  let out = " " + String(line || "") + " ";
+  codes.filter(Boolean).forEach(code => {
+    const esc = escapeRegExp(code);
+    out = out.replace(new RegExp("\\b" + esc + "\\b", "gi"), " ");
+  });
+  return cleanPdfText(out);
+}
+
+function extractZip(block){
+  const matches = String(block || "").match(/\b\d{4}\b/g) || [];
+  if(!matches.length) return "";
+  return matches[matches.length - 1];
+}
+
+function extractQty(text){
+  return pickFirst(text, [
+    /(?:Product\s*)?Quantity\s*[:：]?\s*(\d+)/i,
+    /\bQTY\s*[:：]?\s*(\d+)/i,
+    /\bQty\s*x?\s*(\d+)/i
+  ], "1");
+}
+
+function extractWeight(text){
+  return pickFirst(text, [
+    /Weight\s*[:：]?\s*([0-9.]+\s*(?:kg|g))/i,
+    /\b([0-9.]+\s*(?:kg|g))\b/i
+  ], "0.2g");
+}
+
+function guessAreaCode(text){
+  return pickFirst(text, [
+    /\b([A-Z]\d{2,4})\b/,
+    /\b([A-Z]{1,2}\d{2,4})\b/
+  ], "A091");
+}
+
+function guessService(text){
+  return pickFirst(text, [
+    /\b(SPL[_-]?[A-Z]{2,4})\b/i,
+    /\b(STANDARD|EXPRESS|REGULAR|ECONOMY)\b/i
+  ], "SPL_SP").replace(/-/g, "_").toUpperCase();
+}
+
+function guessMainCode(text){
+  return pickFirst(text, [
+    /\b(P[A-Z0-9]{10,25})\b/,
+    /\b([A-Z]{1,3}\d[A-Z0-9]{8,25})\b/
+  ], "");
+}
+
+function generateRandomOrderId(){
+  const digits = String(Math.floor(Math.random() * 900000) + 100000);
+  const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  let suffix = "";
+  for(let i = 0; i < 8; i++){
+    suffix += letters[Math.floor(Math.random() * letters.length)];
+  }
+  return digits + suffix;
+}
+
+function guessOrderId(text){
+  return pickFirst(text, [
+    /Order\s*ID\s*[:：]?\s*([A-Z0-9-]{8,30})/i,
+    /Order\s*No\.?\s*[:：]?\s*([A-Z0-9-]{8,30})/i,
+    /\b(\d{6}[A-Z0-9]{6,24})\b/
+  ], "");
+}
+
+function guessRemarks(text){
+  let val = pickFirst(text, [
+    /(?:Remarks|Item|Product|Description|Goods|Note)\s*[:：]?\s*([^\n]{2,60})/i
+  ], "");
+  if(!val){
+    const lines = getCleanLines(text);
+    val = lines.find(l => /vitamin|dress|shirt|bag|soap|cream|lotion|item|product/i.test(l)) || "";
+  }
+  return cleanPdfText(val || "ITEM").replace(/^\d+\s*Note\s*[:：]?\s*/i, "");
+}
+
+function looksLikeNoiseLine(line, mainCode="", orderId=""){
+  const u = String(line || "").toUpperCase().trim();
+  if(!u) return true;
+  if(u === "BUYER" || u === "SELLER") return true;
+  if(/^(ORDER\s*ID|DELIVERY\s*ATTEMPT|RETURN\s*ATTEMPT)/.test(u)) return true;
+  if(/^(PRODUCT\s*QUANTITY|WEIGHT|REMARKS|NOTE)\b/.test(u)) return true;
+  if(/^(PDG|HOME|T\d{2}|SPL[_-]?[A-Z]{2,4}|A\d{2,4})$/.test(u)) return true;
+  if(mainCode && u === mainCode.toUpperCase()) return true;
+  if(orderId && u === orderId.toUpperCase()) return true;
+  if(mainCode && u.includes(mainCode.toUpperCase()) && u.replace(mainCode.toUpperCase(), "").trim().length < 8) return true;
+  if(orderId && u.includes(orderId.toUpperCase()) && u.replace(orderId.toUpperCase(), "").trim().length < 8) return true;
+  if(/^P?[A-Z0-9]{10,}$/.test(u)) return true;
+  return false;
+}
+
+function filterAddressLines(lines, options={}){
+  const codes = options.codes || [];
+  const mainCode = options.mainCode || "";
+  const orderId = options.orderId || "";
+  return uniqueLines(lines)
+    .map(line => stripKnownCodes(line, codes))
+    .filter(line => !looksLikeNoiseLine(line, mainCode, orderId))
+    .filter(line => !/^(SPL[_-]?[A-Z]{2,4}|A\d{2,4}|T\d{2}|PDG|HOME)$/i.test(line))
+    .filter(line => !/^\d+\s*$/.test(line))
+    .filter(line => line.length >= 4);
+}
+
+function pickBuyerLines(block, text, codes, mainCode, orderId){
+  let lines = filterAddressLines(getCleanLines(block), {codes, mainCode, orderId});
+  if(!lines.length){
+    lines = filterAddressLines(getCleanLines(text), {codes, mainCode, orderId});
+  }
+  return lines.slice(0, 4);
+}
+
+function pickSellerLines(block, codes, mainCode, orderId){
+  const lines = filterAddressLines(getCleanLines(block), {codes, mainCode, orderId});
+  return lines.slice(0, 4);
+}
+
+function joinAddressLines(lines, maxLen=120){
+  return cleanPdfText((lines || []).join(" ")).slice(0, maxLen);
+}
+
+function parseStructuredAddress(rawBlock, lines, zip){
+  const original = cleanPdfText(rawBlock || joinAddressLines(lines || [], 180));
+  let working = original
+    .replace(/\b(BUYER|SELLER|RECEIVER|CONSIGNEE|SENDER|SHIPPER|NAME|ADDRESS|TEL|PHONE|MOBILE)\b[:：]?/gi, " ")
+    .replace(/\b0\d{10}\b/g, " ")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+
+  const hasPhilippines = /\bPhilippines\b/i.test(working);
+  working = working.replace(/\bRepublic of the Philippines\b/gi, " ").replace(/\bPhilippines\b/gi, " ");
+  if(zip){
+    working = working.replace(new RegExp("\\b" + escapeRegExp(zip) + "\\b", "g"), " ");
+  }
+  working = cleanPdfText(working).replace(/\s*,\s*/g, ", ").replace(/^,|,$/g, "");
+
+  let parts = working.split(/\s*,\s*/).map(s => cleanPdfText(s)).filter(Boolean);
+  if(parts.length <= 1 && lines && lines.length > 1){
+    parts = lines.map(s => cleanPdfText(s)).filter(Boolean);
+  }
+
+  let region = hasPhilippines || parts.length ? "Philippines" : "";
+  let area = "";
+  let city = "";
+  let province = "";
+  let line1 = "";
+
+  const areaIndex = parts.findIndex(p => /(barangay|brgy\.?|bgy\.?|purok|sitio|subd\.?|subdivision|village|zone|district)/i.test(p));
+  if(areaIndex >= 0) area = parts.splice(areaIndex, 1)[0];
+
+  let cityIndex = -1;
+  for(let i = parts.length - 1; i >= 0; i--){
+    if(/(city|municipality|metro manila|manila|quezon|cebu|davao|pasay|makati|taguig|paranaque|parañaque|caloocan|malabon|navotas|valenzuela|las piñas|las pinas|muntinlupa|pasig|marikina|mandaluyong|san juan)/i.test(parts[i])){
+      cityIndex = i;
+      break;
+    }
+  }
+  if(cityIndex >= 0) city = parts.splice(cityIndex, 1)[0];
+
+  if(parts.length) province = parts.pop() || "";
+  if(!area && parts.length) area = parts.pop() || "";
+  line1 = cleanPdfText(parts.join(", "));
+
+  if(!line1 && lines && lines.length){
+    line1 = cleanPdfText(lines[0]);
+    if(line1 === area || line1 === city || line1 === province) line1 = "";
+  }
+
+  return {
+    line1: cleanPdfText(line1),
+    area: cleanPdfText(area).slice(0, 50),
+    city: cleanPdfText(city).slice(0, 50),
+    province: cleanPdfText(province).slice(0, 50),
+    region: cleanPdfText(region).slice(0, 40),
+    zip: zip || ""
+  };
+}
+
+
+function getLines(text){
+  return cleanPdfText(text).split(/\n+/).map(s => cleanPdfText(s)).filter(Boolean);
+}
+
+function normalizeService(raw){
+  let s = cleanPdfText(raw || "");
+  let m = s.match(/\bDST\s+([A-Z0-9]{2,5})[_\s-]?SP\b/i);
+  if(m) return (m[1] + "_SP").toUpperCase();
+  m = s.match(/\b([A-Z0-9]{2,5})[_\s-]?SP\b/i);
+  if(m) return (m[1] + "_SP").toUpperCase();
+  return guessService(s);
+}
+
+function extractTopCodeFromLines(lines){
+  const joined = cleanPdfText((lines || []).join(" ")).replace(/\s+/g, " ");
+  let m = joined.match(/\b(26\s*-\s*\d{4,5}\s*(?:-\s*[A-Z0-9]{1,2}){1,2})\b/i);
+  if(m) return m[1].replace(/\s+/g, "").toUpperCase();
+
+  const lineHit = (lines || []).find(l => /^26-\d{4,5}(?:-[A-Z0-9]{1,2}){1,2}$/i.test(cleanPdfText(l)));
+  return lineHit ? cleanPdfText(lineHit).toUpperCase() : "";
+}
+
+function extractTrackingFromLines(lines){
+  const joined = cleanPdfText((lines || []).join(" "));
+  const matches = joined.match(/\bP[A-Z0-9]{10,15}\b/gi) || [];
+  if(matches.length) return matches[0].toUpperCase();
+  return (guessMainCode(joined) || "").toUpperCase();
+}
+
+function parseFromLine(line){
+  line = cleanPdfText(line || "").replace(/^.*?\bFROM\s+/i, "");
+  const m = line.match(/^(.*?)\s+(\d{11})$/);
+  if(m){
+    return {name: cleanPdfText(m[1]), phone:m[2]};
+  }
+  return {name: line, phone:""};
+}
+
+function parseToLine(line){
+  line = cleanPdfText(line || "").replace(/^.*?\bTO\s+/i, "");
+  const m = line.match(/^(.*?)\s+(\d{3}\*{4}\d{4}|\d{11})$/);
+  if(m){
+    return {name: cleanPdfText(m[1]), phone:m[2]};
+  }
+  return {name: line, phone:""};
+}
+
+const PH_PROVINCES = [
+  "Metro Manila","Abra","Agusan del Norte","Agusan del Sur","Aklan","Albay","Antique","Apayao","Aurora","Basilan","Bataan","Batanes","Batangas","Benguet","Biliran","Bohol","Bukidnon","Bulacan","Cagayan","Camarines Norte","Camarines Sur","Camiguin","Capiz","Catanduanes","Cavite","Cebu","Cotabato","Davao de Oro","Davao del Norte","Davao del Sur","Davao Occidental","Davao Oriental","Dinagat Islands","Eastern Samar","Guimaras","Ifugao","Ilocos Norte","Ilocos Sur","Iloilo","Isabela","Kalinga","La Union","Laguna","Lanao del Norte","Lanao del Sur","Leyte","Maguindanao del Norte","Maguindanao del Sur","Marinduque","Masbate","Misamis Occidental","Misamis Oriental","Mountain Province","Negros Occidental","Negros Oriental","Northern Samar","Nueva Ecija","Nueva Vizcaya","Occidental Mindoro","Oriental Mindoro","Palawan","Pampanga","Pangasinan","Quezon","Quirino","Rizal","Romblon","Samar","Sarangani","Siquijor","Sorsogon","South Cotabato","Southern Leyte","Sultan Kudarat","Sulu","Surigao del Norte","Surigao del Sur","Tarlac","Tawi-Tawi","Zambales","Zamboanga del Norte","Zamboanga del Sur","Zamboanga Sibugay"
+].sort((a,b)=>b.length-a.length);
+
+
+function cleanBarangayOnly(areaText){
+  let s = cleanPdfText(areaText || "");
+
+  // Huwag isama sa Barangay/Area field ang street/road/avenue markers.
+  // Example: "Bugallon-Posadas Street (Pob.)" -> "Bugallon-Posadas"
+  s = s
+    .replace(/\b(?:Street|St\.?|Road|Rd\.?|Avenue|Ave\.?|Highway|Hi-way|Hwy\.?|Drive|Dr\.?|Lane|Ln\.?|Boulevard|Blvd\.?)\b.*$/i, "")
+    .replace(/\s*\((?:Pob\.?|Poblacion)\)\s*$/i, "")
+    .replace(/\b(?:Barangay|Brgy\.?|Bgy\.?)\b/gi, "")
+    .replace(/,{2,}/g, ",")
+    .replace(/^,|,$/g, "")
+    .trim();
+
+  return cleanPdfText(s);
+}
+
+function splitLocationLine(line){
+  line = cleanPdfText(line || "")
+    .replace(/\b\d{4}\b/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  let province = "";
+  for(const p of PH_PROVINCES){
+    const re = new RegExp("(^|\\s)" + escapeRegExp(p) + "$", "i");
+    if(re.test(line)){
+      province = p;
+      line = cleanPdfText(line.replace(new RegExp(escapeRegExp(p) + "$", "i"), ""));
+      break;
+    }
+  }
+
+  let city = "";
+  let area = line;
+
+  const specialCities = ["San Carlos City","Paranaque City","Parañaque City","Quezon City","Cebu City","Davao City","Makati City","Taguig City","Pasig City","Manila","Dumaguete City","Imus City","Laoag City","San Fernando City"];
+  for(const sc of specialCities){
+    if(new RegExp(escapeRegExp(sc) + "$", "i").test(line)){
+      city = sc;
+      area = cleanPdfText(line.replace(new RegExp(escapeRegExp(sc) + "$", "i"), ""));
+      return {area: cleanBarangayOnly(area) || "", city: city || "", province: province || "", region: "Philippines"};
+    }
+  }
+
+  const cityMatch = line.match(/(.+?)\s+([A-ZÑ][A-Za-zÑñ.\- ]+?\s+(?:City|Municipality))$/i);
+  if(cityMatch){
+    area = cleanPdfText(cityMatch[1]);
+    city = cleanPdfText(cityMatch[2]);
+  }else{
+    const words = line.split(/\s+/).filter(Boolean);
+    if(words.length >= 2){
+      city = words.slice(-1).join(" ");
+      area = words.slice(0, -1).join(" ");
+    }else{
+      area = line;
+      city = "";
+    }
+  }
+
+  return {
+    area: cleanBarangayOnly(area) || "",
+    city: city || "",
+    province: province || "",
+    region: "Philippines"
+  };
+}
+
+function cleanAddressLine(line){
+  return cleanPdfText(line || "")
+    .replace(/,{2,}/g, ",")
+    .replace(/\s*,\s*/g, ", ")
+    .replace(/^,|,$/g, "")
+    .replace(/\s{2,}/g, " ");
+}
+
+
+function getSectionBetween(text, startPattern, endPattern){
+  const re = new RegExp(startPattern + "([\\s\\S]*?)(?=" + endPattern + "|$)", "i");
+  const m = cleanPdfText(text).match(re);
+  return m ? cleanPdfText(m[1]) : "";
+}
+
+function getLineAfterPattern(text, pattern){
+  const re = new RegExp(pattern + "\\s*([^\\n]+)", "i");
+  const m = cleanPdfText(text).match(re);
+  return m ? cleanPdfText(m[1]) : "";
+}
+
+function parseFlashPdfWaybillText(rawText, pageNumber){
+  const fullText = cleanPdfText(rawText);
+  const lines = getLines(fullText);
+
+  const topCode = findBigTrackingNo(fullText) || extractTopCodeFromLines(lines) || pickFirst(fullText.replace(/\n/g, " "), [/\b(26\s*-\s*\d{4,5}\s*(?:-\s*[A-Z0-9]{1,2}){1,2})\b/i], "").replace(/\s+/g, "").toUpperCase();
+  const tracking = extractTrackingFromLines(lines);
+
+  const serviceToken = pickFirst(fullText.replace(/\n/g, " "), [
+    /\bDST\s+([A-Z0-9]{2,5})[_\s-]?SP\b/i
+  ], "");
+  const service = serviceToken ? (serviceToken + "_SP").toUpperCase() : normalizeService(fullText);
+
+  let areaCode = "";
+  const serviceIndex = lines.findIndex(l => /\bDST\b/i.test(l) && /\bSP\b/i.test(l));
+  if(serviceIndex >= 0){
+    for(let i = serviceIndex + 1; i < Math.min(lines.length, serviceIndex + 6); i++){
+      if(/^[A-Z]\d{2,3}$/i.test(lines[i])){
+        areaCode = lines[i].toUpperCase();
+        break;
+      }
+    }
+  }
+  if(!areaCode){
+    areaCode = pickFirst(fullText, [/\bDST\s+[A-Z0-9]{2,5}[_\s-]?SP\s*\n\s*([A-Z]\d{2,3})\b/i], "") || guessAreaCode(fullText);
+  }
+
+  const fromLine = getLineAfterPattern(fullText, "(?:^|\\n)\\s*FROM\\s+");
+  const toLine = getLineAfterPattern(fullText, "(?:^|\\n)\\s*TO\\s+");
+
+  const sellerHeader = parseFromLine("FROM " + fromLine);
+  const buyerHeader = parseToLine("TO " + toLine);
+
+  let sellerBlock = getSectionBetween(
+    fullText,
+    "(?:^|\\n)\\s*FROM\\s+[^\\n]*\\n",
+    "(?:\\n\\s*TO\\s+|\\n\\s*BG\\b|\\n\\s*COD\\s+zip\\s+code\\b|\\n\\s*Note\\s*:|\\n\\s*Print\\s*:)"
+  );
+
+  let buyerBlock = getSectionBetween(
+    fullText,
+    "(?:^|\\n)\\s*TO\\s+[^\\n]*\\n",
+    "(?:\\n\\s*BG\\b|\\n\\s*COD\\s+zip\\s+code\\b|\\n\\s*Note\\s*:|\\n\\s*Print\\s*:|\\n\\s*TEL\\s*:)"
+  );
+
+  function cleanBlock(block){
+    return getLines(block)
+      .map(cleanAddressLine)
+      .filter(Boolean)
+      .filter(l => !/^BG$/i.test(l))
+      .filter(l => !/^COD\s+zip\s+code$/i.test(l))
+      .filter(l => !/^\d{4}$/.test(l))
+      .filter(l => !/^Note\s*:/i.test(l))
+      .filter(l => !/^Print\s*:/i.test(l))
+      .filter(l => !/^TEL\s*:/i.test(l))
+      .filter(l => !/\bDST\s+[A-Z0-9]{2,5}[_\s-]?SP\b/i.test(l))
+      .filter(l => !/^[A-Z]\d{2,3}$/.test(l))
+      .filter(l => !new RegExp("\\b" + escapeRegExp(tracking) + "\\b", "i").test(l));
+  }
+
+  let sellerAddrLines = cleanBlock(sellerBlock);
+  let buyerAddrLines = cleanBlock(buyerBlock);
+
+  // Fallback using line indexes when section regex fails.
+  if(!sellerAddrLines.length || !buyerAddrLines.length){
+    const fromIdx = lines.findIndex(l => /^FROM\b/i.test(l));
+    const toIdx = lines.findIndex(l => /^TO\b/i.test(l));
+    const bgIdx = lines.findIndex(l => /^BG$/i.test(l));
+    if(fromIdx >= 0 && toIdx > fromIdx){
+      sellerAddrLines = cleanBlock(lines.slice(fromIdx + 1, toIdx).join("\n"));
+    }
+    if(toIdx >= 0){
+      const endIdx = bgIdx > toIdx ? bgIdx : lines.length;
+      buyerAddrLines = cleanBlock(lines.slice(toIdx + 1, endIdx).join("\n"));
+    }
+  }
+
+  let sellerAddressText = cleanPdfText(sellerAddrLines.join(" "));
+  const sellerZip = extractZip(sellerAddressText) || "1702";
+  sellerAddressText = sellerAddressText.replace(new RegExp("\\b" + escapeRegExp(sellerZip) + "\\b"), "").trim();
+
+  let buyerZip = pickFirst(fullText, [
+    /\bCOD\s+zip\s+code\s*\n\s*(\d{4})\b/i,
+    /\bCOD\s+zip\s+code\s+(\d{4})\b/i
+  ], "");
+  if(!buyerZip) buyerZip = extractZip(buyerAddrLines.join(" "));
+
+  const buyerLocationLine = buyerAddrLines.length ? buyerAddrLines[buyerAddrLines.length - 1] : "";
+  const buyerMainLines = buyerAddrLines.slice(0, Math.max(0, buyerAddrLines.length - 1));
+  const buyerLoc = splitLocationLine(buyerLocationLine);
+
+  const sellerLoc = sellerAddressText.toUpperCase().includes("BACLARAN") || sellerAddressText.toUpperCase().includes("PARANAQUE")
+    ? {area:"Baclaran", city:"Paranaque City", province:"Metro Manila", region:"Philippines"}
+    : splitLocationLine(sellerAddressText);
+
+  const remarks = pickFirst(fullText, [/Note\s*:\s*([^\n]+)/i], "") || "VITAMIN E";
+
+  const buyerFullAddressForLine = cleanPdfText([buyerMainLines.join(" "), buyerLocationLine].filter(Boolean).join(" "));
+  const cleanBuyerLine = cleanPdfText([buyerHeader.name, buyerHeader.phone, buyerFullAddressForLine].filter(Boolean).join(" "))
+    .replace(new RegExp("\\b" + escapeRegExp(tracking) + "\\b", "gi"), "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+
+  const cleanSellerName = cleanPdfText([sellerHeader.name, sellerHeader.phone].filter(Boolean).join(" "))
+    .replace(new RegExp("\\b" + escapeRegExp(tracking) + "\\b", "gi"), "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+
+  return {
+    page: pageNumber,
+    orderId: generateRandomOrderId(),
+    originalOrderId: "",
+    topCode: topCode || "",
+    tracking: tracking || topCode || "",
+    barcodeText: tracking || topCode || "",
+    service: service || "SPL_SP",
+
+    buyerLine1: cleanBuyerLine,
+    buyerCity: buyerLoc.city || "",
+    buyerArea: cleanBarangayOnly(buyerLoc.area) || "",
+    buyerProvince: buyerLoc.province || "",
+    buyerRegion: buyerLoc.region || "Philippines",
+    buyerZip: buyerZip || "",
+
+    sellerName: cleanSellerName.slice(0, 90),
+    sellerLine1: sellerAddressText.slice(0, 160),
+    sellerCity: sellerLoc.city || "Paranaque City",
+    sellerArea: cleanBarangayOnly(sellerLoc.area) || "Baclaran",
+    sellerProvince: sellerLoc.province || "Metro Manila",
+    sellerRegion: sellerLoc.region || "Philippines",
+    sellerZip: sellerZip || "1702",
+
+    areaCode: areaCode || "A091",
+    remarks: remarks,
+    quantity: "1",
+    weight: "0.2g",
+    rawText: fullText
+  };
+}
+
+function parsePdfWaybillText(rawText, pageNumber){
+  const lines = getLines(rawText);
+  if(/\bFROM\b/i.test(rawText) && /\bTO\b/i.test(rawText)){
+    return parseFlashPdfWaybillText(rawText, pageNumber);
+  }
+
+  const text = cleanPdfText(rawText);
+  const trackingOrBarcode = guessMainCode(text);
+  const originalOrderId = guessOrderId(text) || trackingOrBarcode;
+  const orderId = generateRandomOrderId();
+  const service = guessService(text) || "SPL_SP";
+
+  const buyerBlock = splitBlock(text, ["BUYER", "Receiver", "Consignee"], ["SELLER", "Sender", "Shipper", "Product", "Weight", "Remarks", "Delivery"]);
+  const sellerBlock = splitBlock(text, ["SELLER", "Sender", "Shipper"], ["Product", "Remarks", "Quantity", "Weight", "Delivery"]);
+  const codes = [trackingOrBarcode, orderId, service, "PDG", "HOME"];
+
+  const buyerLines = pickBuyerLines(buyerBlock, text, codes, trackingOrBarcode, orderId);
+  const sellerLines = pickSellerLines(sellerBlock, codes, trackingOrBarcode, orderId);
+  const buyerZip = extractZip(buyerBlock || text);
+  const sellerZip = extractZip(sellerBlock || text);
+  const buyerAddress = parseStructuredAddress(buyerBlock, buyerLines, buyerZip);
+  const sellerAddress = parseStructuredAddress(sellerBlock, sellerLines, sellerZip);
+
+  const sellerName = sellerLines[0] || sellerAddress.line1 || "";
+  let sellerLine1 = sellerLines.slice(1).join(" ") || sellerAddress.line1 || "";
+  if(sellerLine1 === sellerName) sellerLine1 = sellerAddress.line1 || sellerLine1;
+
+  return {
+    page: pageNumber,
+    orderId: orderId || "",
+    originalOrderId: originalOrderId || "",
+    topCode: trackingOrBarcode || "",
+    tracking: trackingOrBarcode || "",
+    barcodeText: trackingOrBarcode || orderId || "",
+    service: service,
+    buyerLine1: joinAddressLines(buyerLines, 999) || buyerAddress.line1,
+    buyerCity: buyerAddress.city || "",
+    buyerArea: buyerAddress.area || "",
+    buyerProvince: buyerAddress.province || "",
+    buyerRegion: buyerAddress.region || "",
+    buyerZip: buyerAddress.zip || "",
+    sellerName: cleanPdfText(sellerName).slice(0, 60),
+    sellerLine1: cleanPdfText(sellerLine1).slice(0, 120),
+    sellerCity: sellerAddress.city || "",
+    sellerArea: sellerAddress.area || "",
+    sellerProvince: sellerAddress.province || "",
+    sellerRegion: sellerAddress.region || "",
+    sellerZip: sellerAddress.zip || "",
+    areaCode: guessAreaCode(text) || "A091",
+    remarks: guessRemarks(text),
+    quantity: extractQty(text),
+    weight: extractWeight(text),
+    rawText: text
+  };
+}
+
+
+function setText(id, value){
+  const el = document.getElementById(id);
+  if(el) el.textContent = value || "";
+}
+
+function setInputValue(id, value){
+  const el = document.getElementById(id);
+  if(el) el.value = value || "";
+}
+
+function findBigTrackingNo(rawText){
+  const original = String(rawText || "")
+    .replace(/\u00a0/g, " ")
+    .replace(/[‐‑‒–—]/g, "-");
+
+  // 1) Most reliable: remove all spaces first, then search the exact top-code format.
+  // This catches PDF text layers that split the big code as: 26- 2 3 5 2 4 - 3 C - 0 3
+  const compactAll = original.replace(/\s+/g, "").toUpperCase();
+  let m = compactAll.match(/\b(26-\d{4,5}-[A-Z0-9]{1,2}-[A-Z0-9]{1,2})\b/);
+  if(m && m[1]) return m[1];
+  m = compactAll.match(/\b(26-\d{4,5}-[A-Z0-9]{1,3})\b/);
+  if(m && m[1]) return m[1];
+
+  // 2) Normal spaced-text search.
+  const t = original.replace(/\s+/g, " ");
+  const patterns = [
+    /\b(26\s*-\s*\d[\d\s]{3,7}\s*-\s*[A-Z0-9\s]{1,4}\s*-\s*[A-Z0-9\s]{1,4})\b/i,
+    /\b(26\s*-\s*\d[\d\s]{3,7}\s*-\s*[A-Z0-9\s]{1,5})\b/i
+  ];
+
+  for(const re of patterns){
+    const found = t.match(re);
+    if(found && found[1]){
+      const val = found[1].replace(/\s+/g, "").toUpperCase();
+      const exact = val.match(/\b(26-\d{4,5}(?:-[A-Z0-9]{1,2}){1,2})\b/i);
+      if(exact && exact[1]) return exact[1].toUpperCase();
+    }
+  }
+
+  // 3) Last fallback: each line compacted.
+  const lines = original.split(/\n+/);
+  for(const line of lines){
+    const compact = line.replace(/\s+/g, "").toUpperCase();
+    const exact = compact.match(/\b(26-\d{4,5}(?:-[A-Z0-9]{1,2}){1,2})\b/);
+    if(exact && exact[1]) return exact[1];
+  }
+
+  return "";
+}
+
+function generateTrackingImage(codeText){
+  const value = findBigTrackingNo(codeText) || cleanPdfText(codeText || "");
+  const trackingImage = document.getElementById("trackingImage");
+  const trackingPlaceholder = document.getElementById("trackingPlaceholder");
+  if(!trackingImage) return;
+
+  if(!value){
+    trackingImage.removeAttribute("src");
+    trackingImage.style.display = "none";
+    if(trackingPlaceholder){
+      trackingPlaceholder.style.display = "flex";
+      trackingPlaceholder.textContent = "Upload Tracking No.";
+    }
+    return;
+  }
+
+  try{
+    const canvas = document.createElement("canvas");
+    canvas.width = 1800;
+    canvas.height = 260;
+    const ctx = canvas.getContext("2d");
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = "#000000";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+
+    let fontSize = 150;
+    do{
+      ctx.font = "900 " + fontSize + "px Arial Black, Arial, sans-serif";
+      fontSize -= 4;
+    }while(ctx.measureText(value).width > canvas.width - 80 && fontSize > 70);
+
+    ctx.fillText(value, canvas.width / 2, canvas.height / 2 + 5);
+    trackingImage.src = canvas.toDataURL("image/png");
+    trackingImage.style.display = "block";
+    if(trackingPlaceholder) trackingPlaceholder.style.display = "none";
+
+    // Auto-adjust image control so the whole top code fits inside Tracking No. box.
+    const w = document.getElementById("trackingWidth");
+    const x = document.getElementById("trackingX");
+    const y = document.getElementById("trackingY");
+    if(w) w.value = 390;
+    if(x) x.value = 0;
+    if(y) y.value = 0;
+
+    if(typeof updateTrackingImageStyle === "function") updateTrackingImageStyle();
+  }catch(err){
+    console.warn("Auto tracking image generation failed", err);
+    if(trackingPlaceholder){
+      trackingPlaceholder.style.display = "flex";
+      trackingPlaceholder.textContent = value;
+    }
+  }
+}
+
+function generateAutoBarcode(codeText){
+  const value = cleanPdfText(codeText || "");
+  if(!value || !window.JsBarcode) return;
+  try{
+    const canvas = document.createElement("canvas");
+    JsBarcode(canvas, value, {
+      format: "CODE128",
+      displayValue: false,
+      margin: 0,
+      height: 70,
+      width: 1.8
+    });
+    const img = document.getElementById("barcodeImage");
+    const fake = document.getElementById("barcodeFake");
+    if(img){
+      img.src = canvas.toDataURL("image/png");
+      img.style.display = "block";
+    }
+    if(fake) fake.style.display = "none";
+    if(typeof updateBarcodeImageStyle === "function") updateBarcodeImageStyle();
+  }catch(err){
+    console.warn("Auto barcode generation failed", err);
+  }
+}
+
+async function generateAutoQr(codeText){
+  const value = cleanPdfText(codeText || "");
+  if(!value || !window.QRCode) return;
+  try{
+    const dataUrl = await QRCode.toDataURL(value, {
+      margin: 0,
+      width: 180,
+      errorCorrectionLevel: "M"
+    });
+    const img = document.getElementById("qrImage");
+    const fake = document.getElementById("qrFake");
+    if(img){
+      img.src = dataUrl;
+      img.style.display = "block";
+    }
+    if(fake) fake.style.display = "none";
+  }catch(err){
+    console.warn("Auto QR generation failed", err);
+  }
+}
+
+function applyWaybillData(data){
+  if(!data) return;
+
+  setText("p_orderId", data.orderId || "");
+  setText("p_service", data.service || "SPL_SP");
+  setText("p_buyerLine1", data.buyerLine1);
+  setText("p_buyerCity", data.buyerCity);
+  setText("p_buyerArea", data.buyerArea);
+  setText("p_buyerProvince", data.buyerProvince);
+  setText("p_buyerRegion", data.buyerRegion);
+  setText("p_buyerZip", data.buyerZip);
+  setText("p_sellerName", data.sellerName);
+  setText("p_sellerLine1", data.sellerLine1);
+  setText("p_sellerCity", data.sellerCity);
+  setText("p_sellerArea", data.sellerArea);
+  setText("p_sellerProvince", data.sellerProvince);
+  setText("p_sellerRegion", data.sellerRegion);
+  setText("p_sellerZip", data.sellerZip);
+  setText("p_areaCode", data.areaCode || "A091");
+  setText("p_remarks", data.remarks || "ITEM");
+  setText("p_quantity", data.quantity || "1");
+  setText("p_weight", data.weight || "0.2g");
+
+  setText("p_barcodeText", data.barcodeText || data.tracking || "");
+  setInputValue("barcodeText", data.barcodeText || data.tracking || "");
+
+  const trackingPlaceholder = document.getElementById("trackingPlaceholder");
+  if(trackingPlaceholder){
+    trackingPlaceholder.style.color = "#000";
+    trackingPlaceholder.style.fontSize = "24px";
+    trackingPlaceholder.style.fontWeight = "900";
+  }
+
+  const areaInput = document.getElementById("areaCodeInput");
+  if(areaInput) areaInput.value = data.areaCode || "A091";
+
+  const safeTopCode = findBigTrackingNo(data.topCode || "") || findBigTrackingNo(data.rawText || "");
+
+  // Best solution: use the exact cropped IMAGE from the original PDF.
+  // If crop is available, it will show the real printed tracking no. instead of "Upload Tracking No."
+  if(data.images && data.images.tracking && setImageSrc("trackingImage", null, data.images.tracking)){
+    const trackingPlaceholder = document.getElementById("trackingPlaceholder");
+    if(trackingPlaceholder) trackingPlaceholder.style.display = "none";
+    const w = document.getElementById("trackingWidth");
+    const x = document.getElementById("trackingX");
+    const y = document.getElementById("trackingY");
+    if(w) w.value = 330;
+    if(x) x.value = -50;
+    if(y) y.value = 13;
+    if(typeof updateTrackingImageStyle === "function") updateTrackingImageStyle();
+  }else{
+    generateTrackingImage(safeTopCode || "");
+  }
+
+  // Barcode can still be generated from the P tracking code for cleaner scan.
+  generateAutoBarcode(data.barcodeText || data.tracking || data.orderId || "");
+
+  // ORIGINAL QR ONLY: huwag gumawa ng generated QR.
+  // Kukunin lang ang QR code mula sa original PDF at ilalagay sa waybill.
+  const qrImg = document.getElementById("qrImage");
+  const qrFake = document.getElementById("qrFake");
+  if(data.images && data.images.qr && setImageSrc("qrImage", "qrFake", data.images.qr)){
+    // preserve original QR image from the source waybill
+  }else{
+    if(qrImg){
+      qrImg.removeAttribute("src");
+      qrImg.style.display = "none";
+    }
+    if(qrFake){
+      qrFake.style.display = "block";
+      qrFake.textContent = "No original QR found";
+      qrFake.style.fontSize = "12px";
+      qrFake.style.fontWeight = "700";
+      qrFake.style.color = "#111";
+      qrFake.style.textAlign = "center";
+      qrFake.style.padding = "10px 6px";
+      qrFake.style.lineHeight = "1.2";
+    }
+  }
+
+  if(typeof applyAddressTextStyle === "function") applyAddressTextStyle();
+  if(typeof fitBuyerAddressToBox === "function") setTimeout(fitBuyerAddressToBox, 0);
+  if(typeof saveCurrentToHistory === "function") saveCurrentToHistory("PDF Page " + data.page);
+}
+
+
+function scoreAddressConfidence(w){
+  const buyerLine = cleanPdfText(w.buyerLine1 || "");
+  const area = cleanPdfText(w.buyerArea || "");
+  const city = cleanPdfText(w.buyerCity || "");
+  const province = cleanPdfText(w.buyerProvince || "");
+  const zip = cleanPdfText(w.buyerZip || "");
+
+  let score = 0;
+  const reasons = [];
+
+  if(buyerLine.length >= 8){ score += 25; } else { reasons.push("kulang buyer address/name"); }
+  function validLocationField(value, fieldName){
+    value = cleanPdfText(value || "");
+    if(value.length < 3){
+      reasons.push(fieldName + " too short");
+      return false;
+    }
+    if(/^[A-Za-zÑñ]{1,2}$/.test(value)){
+      reasons.push(fieldName + " only 1-2 letters");
+      return false;
+    }
+    return true;
+  }
+
+  if(validLocationField(area, "Barangay/Area")){ score += 20; }
+  if(validLocationField(city, "City/Municipality")){ score += 20; }
+  if(validLocationField(province, "Province")){ score += 20; }
+  if(/^\d{4}$/.test(zip)){ score += 15; } else { reasons.push("kulang/invalid ZIP"); }
+
+  const full = (buyerLine + " " + area + " " + city + " " + province).toLowerCase();
+  if(/\bbarangay\b|\bbrgy\b|\bpurok\b|\bsitio\b|\bsubdivision\b|\bvillage\b/.test(full)) score += 5;
+  if(/p\d{4,}|kcj|dst\s|from\s|cod\s|print\s|tel\s/i.test(full)){
+    score -= 25;
+    reasons.push("may maling text na nasama sa address");
+  }
+
+  score = Math.max(0, Math.min(100, score));
+
+  if(w.addressConfirmed){
+    return {status:"CONFIRMED", score:100, reasons:["manual confirmed"]};
+  }
+
+  if(score >= 100){
+    return {status:"AUTO-FILL OK", score, reasons};
+  }
+
+  return {status:"NEEDS REVIEW", score, reasons};
+}
+
+function updateAddressStatus(w){
+  const s = scoreAddressConfidence(w);
+  w.addressStatus = s.status;
+  w.addressScore = s.score;
+  w.addressReasons = s.reasons || [];
+  return w;
+}
+
+function addressStatusBadge(w){
+  const s = w.addressStatus || "NEEDS REVIEW";
+  const score = typeof w.addressScore === "number" ? w.addressScore : 0;
+
+  // Request: kapag 99% pababa, ibang kulay / red warning.
+  if(s === "CONFIRMED"){
+    return `<span class="address-status-ok full-score">✅ CONFIRMED</span>`;
+  }
+
+  if(score >= 100 && s === "AUTO-FILL OK"){
+    return `<span class="address-status-ok full-score">✅ AUTO 100%</span>`;
+  }
+
+  const reasonText = escapeHtml((w.addressReasons || []).join(", "));
+  return `<span class="address-status-review low-score" title="${reasonText}">⚠️ REVIEW ${score}%</span>`;
+}
+
+function confirmAddress(index){
+  const w = extractedPdfWaybills[index];
+  if(!w) return;
+
+  const current = [
+    "Buyer: " + (w.buyerLine1 || ""),
+    "Barangay/Area: " + (w.buyerArea || ""),
+    "City/Municipality: " + (w.buyerCity || ""),
+    "Province: " + (w.buyerProvince || ""),
+    "ZIP: " + (w.buyerZip || "")
+  ].join("\n");
+
+  const ok = confirm(
+    "I-review ang address bago i-confirm:\n\n" +
+    current +
+    "\n\nOK = i-edit ngayon\nCancel = huwag muna"
+  );
+  if(!ok) return;
+
+  const buyerLine = prompt("Buyer name/address line:", w.buyerLine1 || "");
+  if(buyerLine === null) return;
+
+  const area = prompt("Barangay / Area:", w.buyerArea || "");
+  if(area === null) return;
+
+  const city = prompt("City / Municipality:", w.buyerCity || "");
+  if(city === null) return;
+
+  const province = prompt("Province:", w.buyerProvince || "");
+  if(province === null) return;
+
+  const zip = prompt("ZIP code:", w.buyerZip || "");
+  if(zip === null) return;
+
+  w.buyerLine1 = cleanPdfText(buyerLine);
+  w.buyerArea = cleanPdfText(area);
+  w.buyerCity = cleanPdfText(city);
+  w.buyerProvince = cleanPdfText(province);
+  w.buyerRegion = w.buyerRegion || "Philippines";
+  w.buyerZip = cleanPdfText(zip);
+  w.addressConfirmed = true;
+  updateAddressStatus(w);
+
+  selectedPdfWaybillIndex = index;
+  renderPdfPreviewTable();
+  applyWaybillData(w);
+  if(typeof fitBuyerAddressToBox === "function") setTimeout(fitBuyerAddressToBox, 0);
+  setBulkPdfStatus("Address confirmed for page " + w.page + ".");
+}
+
+function hasUnconfirmedAddress(){
+  return extractedPdfWaybills.some(w => {
+    updateAddressStatus(w);
+    // 99% pababa = kailangan i-review muna.
+    return !(w.addressStatus === "CONFIRMED" || (w.addressStatus === "AUTO-FILL OK" && w.addressScore >= 100));
+  });
+}
+
+
+let bulkDownloadStopRequested = false;
+let bulkDownloadRunning = false;
+
+function setStopDownloadEnabled(enabled){
+  const btn = document.getElementById("stopBulkDownloadBtn");
+  if(btn) btn.disabled = !enabled;
+}
+
+function stopBulkDownload(){
+  if(!bulkDownloadRunning){
+    bulkDownloadStopRequested = true;
+    setBulkPdfStatus("Download stop requested.");
+    return;
+  }
+  bulkDownloadStopRequested = true;
+  setBulkPdfStatus("Stopping download after current file...");
+}
+
+function renderPdfPreviewTable(){
+  const box = document.getElementById("bulkPdfPreview");
+  if(!box) return;
+
+  if(!extractedPdfWaybills.length){
+    box.innerHTML = "";
+    return;
+  }
+
+  const rows = extractedPdfWaybills.map((w, i) => {
+    updateAddressStatus(w);
+    return `
+    <tr class="${(i === selectedPdfWaybillIndex ? "active-row " : "") + ((w.addressScore || 0) >= 100 ? "address-full-score" : "address-low-score")}">
+      <td>${w.page}</td>
+      <td>${escapeHtml((w.topCode ? w.topCode + " / " : "") + (w.barcodeText || w.tracking || ""))}</td>
+      <td>${escapeHtml(w.buyerLine1 || "")}<br>${addressStatusBadge(w)}<br><small>${escapeHtml([w.buyerArea,w.buyerCity,w.buyerProvince,w.buyerZip].filter(Boolean).join(" / "))}</small><br><small style="color:#991b1b;font-weight:800;">${escapeHtml((w.addressReasons || []).join(", "))}</small></td>
+      <td>${escapeHtml(w.sellerName || w.sellerLine1 || "")}</td>
+      <td>${escapeHtml(w.remarks || "")}</td>
+      <td>
+        <button type="button" class="importSmallBtn" onclick="selectPdfWaybill(${i});applySelectedPdfWaybill();">APPLY</button>
+        <button type="button" class="importSmallBtn reviewBtn" onclick="confirmAddress(${i});">CONFIRM ADDRESS</button>
+      </td>
+    </tr>`;
+  }).join("");
+
+  box.innerHTML = `
+    <table class="pdf-importer-table">
+      <thead>
+        <tr>
+          <th>Page</th>
+          <th>Tracking/Barcode</th>
+          <th>Buyer</th>
+          <th>Seller</th>
+          <th>Item</th>
+          <th>Action</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>
+  `;
+
+  const raw = document.getElementById("bulkPdfRawText");
+  if(raw) raw.value = extractedPdfWaybills[selectedPdfWaybillIndex]?.rawText || "";
+}
+
+function escapeHtml(s){
+  return String(s || "").replace(/[&<>"']/g, c => ({
+    "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#039;"
+  }[c]));
+}
+
+function selectPdfWaybill(index){
+  if(!extractedPdfWaybills.length) return;
+  selectedPdfWaybillIndex = Math.max(0, Math.min(extractedPdfWaybills.length - 1, index));
+  renderPdfPreviewTable();
+  applyWaybillData(extractedPdfWaybills[selectedPdfWaybillIndex]);
+}
+
+function selectPrevPdfWaybill(){
+  selectPdfWaybill(selectedPdfWaybillIndex - 1);
+}
+
+function selectNextPdfWaybill(){
+  selectPdfWaybill(selectedPdfWaybillIndex + 1);
+}
+
+function applySelectedPdfWaybill(){
+  if(!extractedPdfWaybills.length){
+    alert("Mag-upload muna ng PDF.");
+    return;
+  }
+  applyWaybillData(extractedPdfWaybills[selectedPdfWaybillIndex]);
+  setBulkPdfStatus("Applied page " + extractedPdfWaybills[selectedPdfWaybillIndex].page + " sa waybill preview.");
+}
+
+
+function cropCanvasToDataUrl(sourceCanvas, x, y, w, h){
+  const c = document.createElement("canvas");
+  c.width = Math.max(1, Math.round(w));
+  c.height = Math.max(1, Math.round(h));
+  const ctx = c.getContext("2d");
+  ctx.fillStyle = "#fff";
+  ctx.fillRect(0, 0, c.width, c.height);
+  ctx.drawImage(sourceCanvas, x, y, w, h, 0, 0, c.width, c.height);
+  return c.toDataURL("image/png");
+}
+
+async function extractPdfPageImages(page){
+  try{
+    const viewport = page.getViewport({scale: 3});
+    const canvas = document.createElement("canvas");
+    const ctx = canvas.getContext("2d", {willReadFrequently:true});
+    canvas.width = viewport.width;
+    canvas.height = viewport.height;
+    await page.render({canvasContext: ctx, viewport}).promise;
+
+    const W = canvas.width;
+    const H = canvas.height;
+
+    // Original PDF size is about 283 x 425.
+    // Crop using ratios so it works even at different render scales.
+    return {
+      // BIG TRACKING NO. IMAGE: exact crop of the huge 26-xxxxx-xx-xx number.
+      // This avoids PDF text-layer/OCR mistakes completely.
+      tracking: cropCanvasToDataUrl(canvas, W*0.13, H*0.018, W*0.74, H*0.055),
+
+      // Clean barcode crop if needed.
+      barcode: cropCanvasToDataUrl(canvas, W*0.075, H*0.078, W*0.835, H*0.100),
+
+      // QR crop from bottom right of original.
+      // QR CODE ONLY crop
+      // X = W*0.623  -> galaw pakaliwa/pakanan
+      // Y = H*0.723  -> galaw pataas/pababa
+      // WIDTH = W*0.162
+      // HEIGHT = H*0.108
+      // Kapag may nadadamay pang line/text, bawasan pa ang HEIGHT.
+      qr: cropCanvasToDataUrl(canvas, W*0.623, H*0.725, W*0.162, H*0.110)
+    };
+  }catch(err){
+    console.warn("PDF image crop failed", err);
+    return null;
+  }
+}
+
+function setImageSrc(imgId, fakeId, dataUrl){
+  const img = document.getElementById(imgId);
+  const fake = fakeId ? document.getElementById(fakeId) : null;
+  if(!img || !dataUrl) return false;
+  img.src = dataUrl;
+  img.style.display = "block";
+  if(fake) fake.style.display = "none";
+  return true;
+}
+
+
+function joinPdfItems(items, preserveLines=true){
+  const filtered = (items || [])
+    .filter(it => cleanPdfText(it.str || ""))
+    .map(it => ({str: cleanPdfText(it.str), x: it.transform[4], y: it.transform[5]}));
+
+  if(!preserveLines){
+    return cleanPdfText(filtered.sort((a,b)=>a.x-b.x).map(i=>i.str).join(" "));
+  }
+
+  const rows = {};
+  filtered.forEach(item => {
+    const y = Math.round(item.y);
+    if(!rows[y]) rows[y] = [];
+    rows[y].push(item);
+  });
+
+  return Object.keys(rows)
+    .sort((a,b)=>Number(b)-Number(a))
+    .map(y => rows[y].sort((a,b)=>a.x-b.x).map(i=>i.str).join(" "))
+    .join("\n")
+    .trim();
+}
+
+function regionItems(items, pageHeight, rect){
+  // rect uses PDF top-left coordinates: x1,y1,x2,y2
+  // Important: remove rotated side tracking text, because that caused garbage like
+  // "P3314... TO ..." or "3 3 1 4 FROM ..." inside address fields.
+  const x1 = rect.x1, x2 = rect.x2;
+  const bottomY1 = pageHeight - rect.y2;
+  const bottomY2 = pageHeight - rect.y1;
+  const horizontalOnly = rect.horizontalOnly !== false;
+
+  return (items || []).filter(it => {
+    const x = it.transform[4];
+    const y = it.transform[5];
+
+    if(horizontalOnly){
+      const a = Math.abs(it.transform[0] || 0);
+      const b = Math.abs(it.transform[1] || 0);
+      const c = Math.abs(it.transform[2] || 0);
+      const d = Math.abs(it.transform[3] || 0);
+
+      // Horizontal text usually has strong a/d and tiny b/c.
+      // Rotated side text usually has strong b/c and tiny a/d.
+      if((a < b) || (d < c)) return false;
+    }
+
+    return x >= x1 && x <= x2 && y >= bottomY1 && y <= bottomY2;
+  });
+}
+
+function parsePdfPageByPosition(items, pageHeight, pageNumber){
+  const topCodeText = joinPdfItems(regionItems(items, pageHeight, {x1:0, y1:0, x2:283, y2:70}), false);
+  const barcodeTextRegion = joinPdfItems(regionItems(items, pageHeight, {x1:60, y1:45, x2:225, y2:72}), false);
+  const serviceText = joinPdfItems(regionItems(items, pageHeight, {x1:5, y1:65, x2:90, y2:85}), false);
+  const sellerHeaderText = joinPdfItems(regionItems(items, pageHeight, {x1:8, y1:80, x2:210, y2:94}), false);
+  const sellerAddressTextRaw = joinPdfItems(regionItems(items, pageHeight, {x1:8, y1:92, x2:210, y2:118}), true);
+  const buyerHeaderText = joinPdfItems(regionItems(items, pageHeight, {x1:8, y1:125, x2:220, y2:148}), false);
+  const buyerAddressTextRaw = joinPdfItems(regionItems(items, pageHeight, {x1:8, y1:145, x2:220, y2:185}), true);
+  const noteText = joinPdfItems(regionItems(items, pageHeight, {x1:5, y1:212, x2:120, y2:232}), false);
+  const sortText = joinPdfItems(regionItems(items, pageHeight, {x1:80, y1:295, x2:185, y2:360}), false);
+  const zipText = joinPdfItems(regionItems(items, pageHeight, {x1:5, y1:325, x2:100, y2:372}), false);
+
+  const allText = joinPdfItems(items, true);
+  const topCode = findBigTrackingNo(topCodeText) || findBigTrackingNo(allText);
+  const tracking = (extractTrackingFromLines(getLines(barcodeTextRegion)) || extractTrackingFromLines(getLines(allText))).toUpperCase();
+  const serviceToken = pickFirst(serviceText, [/\bDST\s+([A-Z0-9]{2,5})[_\s-]?SP\b/i, /\b([A-Z0-9]{2,5})[_\s-]?SP\b/i], "");
+  const service = serviceToken ? (serviceToken + "_SP").toUpperCase() : "SPL_SP";
+
+  const sellerHeader = parseFromLine("FROM " + sellerHeaderText.replace(/^FROM\s+/i, ""));
+  let sellerAddressText = cleanPdfText(sellerAddressTextRaw.replace(/\n/g, " "));
+  const sellerZip = extractZip(sellerAddressText) || "1702";
+  sellerAddressText = sellerAddressText.replace(new RegExp("\\b" + escapeRegExp(sellerZip) + "\\b"), "").trim();
+
+  const buyerHeader = parseToLine("TO " + buyerHeaderText.replace(/^TO\s+/i, ""));
+  const buyerAddressLines = getLines(buyerAddressTextRaw).map(cleanAddressLine).filter(Boolean);
+  const buyerLocLine = buyerAddressLines.length ? buyerAddressLines[buyerAddressLines.length - 1] : "";
+  const buyerMain = buyerAddressLines.slice(0, Math.max(0, buyerAddressLines.length - 1)).join(" ");
+  const buyerLoc = splitLocationLine(buyerLocLine);
+
+  const zip = pickFirst(zipText, [/\b(\d{4})\b/], "") || pickFirst(allText, [/\bCOD\s+zip\s+code\s*(\d{4})\b/i], "");
+  const sortCode = pickFirst(sortText, [/\b([A-Z]\d{2,3})\b/i], "") || guessAreaCode(allText);
+  const note = pickFirst(noteText, [/Note\s*:\s*([^\n]+)/i, /\b(VITAMIN\s+E)\b/i], "") || "VITAMIN E";
+
+  const buyerFullAddressForLine = cleanPdfText([buyerMain, buyerLocLine].filter(Boolean).join(" "));
+  const cleanBuyerLine = cleanPdfText([buyerHeader.name, buyerHeader.phone, buyerFullAddressForLine].filter(Boolean).join(" "))
+    .replace(new RegExp("\\b" + escapeRegExp(tracking) + "\\b", "gi"), "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+
+  const cleanSellerName = cleanPdfText([sellerHeader.name, sellerHeader.phone].filter(Boolean).join(" "))
+    .replace(new RegExp("\\b" + escapeRegExp(tracking) + "\\b", "gi"), "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+
+  return {
+    page: pageNumber,
+    orderId: generateRandomOrderId(),
+    originalOrderId: "",
+    topCode: topCode || "",
+    tracking: tracking || "",
+    barcodeText: tracking || "",
+    service: service,
+    buyerLine1: cleanBuyerLine,
+    buyerCity: buyerLoc.city || "",
+    buyerArea: cleanBarangayOnly(buyerLoc.area) || "",
+    buyerProvince: buyerLoc.province || "",
+    buyerRegion: buyerLoc.region || "Philippines",
+    buyerZip: zip || "",
+    sellerName: cleanSellerName.slice(0, 90),
+    sellerLine1: sellerAddressText.slice(0, 160),
+    sellerCity: "Paranaque City",
+    sellerArea: "Baclaran",
+    sellerProvince: "Metro Manila",
+    sellerRegion: "Philippines",
+    sellerZip: sellerZip || "1702",
+    areaCode: sortCode || "A091",
+    remarks: note,
+    quantity: "1",
+    weight: "0.2g",
+    rawText: allText
+  };
+}
+
+async function readPdfPageStructured(page, pageNumber){
+  const content = await page.getTextContent();
+  const items = content.items || [];
+  const pageHeight = (page.view && page.view[3]) ? page.view[3] : 425;
+  const parsed = parsePdfPageByPosition(items, pageHeight, pageNumber);
+  return parsed;
+}
+
+async function readPdfPageText(page){
+  const content = await page.getTextContent();
+  const items = content.items || [];
+  // I-group by Y position para mas maayos ang order ng text
+  const rows = {};
+  items.forEach(item => {
+    const y = Math.round(item.transform[5]);
+    if(!rows[y]) rows[y] = [];
+    rows[y].push(item);
+  });
+  return Object.keys(rows)
+    .sort((a,b)=>Number(b)-Number(a))
+    .map(y => rows[y].sort((a,b)=>a.transform[4]-b.transform[4]).map(i=>i.str).join(" "))
+    .join("\n");
+}
+
+async function handleBulkPdfUpload(file){
+  if(!file) return;
+  if(!window.pdfjsLib){
+    alert("No na-load ang PDF.js library. Check internet connection o CDN.");
+    return;
+  }
+
+  setBulkPdfStatus("Binabasa ang PDF...");
+  extractedPdfWaybills = [];
+  selectedPdfWaybillIndex = 0;
+  renderPdfPreviewTable();
+
+  try{
+    const buffer = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({data: buffer}).promise;
+
+    for(let pageNo=1; pageNo<=pdf.numPages; pageNo++){
+      setBulkPdfStatus("Extracting page " + pageNo + " of " + pdf.numPages + "...");
+      const page = await pdf.getPage(pageNo);
+      const rawText = await readPdfPageText(page);
+      const parsed = await readPdfPageStructured(page, pageNo);
+      const fallback = parsePdfWaybillText(rawText, pageNo);
+
+      Object.keys(fallback).forEach(k => {
+        if(!parsed[k]) parsed[k] = fallback[k];
+      });
+
+      // IMPORTANT: Ito ang malaking Tracking No. sa taas ng original waybill.
+      // Huwag hayaan na maging blank, kaya laging kunin ulit mula sa raw PDF text.
+      const exactTopCode = findBigTrackingNo(rawText) || findBigTrackingNo(parsed.rawText || "") || findBigTrackingNo(fallback.rawText || "");
+      if(exactTopCode){
+        parsed.topCode = exactTopCode;
+      }
+
+      parsed.rawText = rawText || parsed.rawText || fallback.rawText || "";
+      parsed.images = await extractPdfPageImages(page);
+      updateAddressStatus(parsed);
+      extractedPdfWaybills.push(parsed);
+    }
+
+    setBulkPdfStatus("Done: " + extractedPdfWaybills.length + " waybill page(s) extracted. I-check muna ang preview table.");
+    renderPdfPreviewTable();
+
+    if(extractedPdfWaybills.length){
+      selectPdfWaybill(0);
+    }
+  }catch(err){
+    console.error(err);
+    const msg = err && err.message ? err.message : String(err || "Unknown error");
+    setBulkPdfStatus("Error: hindi nabasa ang PDF. Detalye: " + msg);
+    alert("May error sa pagbabasa ng PDF. Detalye: " + msg);
+  }
+}
+
+document.getElementById("bulkPdfUpload")?.addEventListener("change", e => {
+  handleBulkPdfUpload(e.target.files[0]);
+});
+
+function waitMs(ms){
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+async function downloadOneExtractedWaybill(data, index){
+  applyWaybillData(data);
+  await waitMs(250);
+  const canvas = await html2canvas(document.getElementById("printPage"), {
+    scale: 4,
+    backgroundColor: "#fff",
+    useCORS: true
+  });
+  const a = document.createElement("a");
+  const code = (data.barcodeText || data.tracking || ("page-" + data.page)).replace(/[^a-z0-9_-]/gi, "");
+  a.download = String(index + 1).padStart(3, "0") + "-waybill-" + code + ".jpg";
+  a.href = canvas.toDataURL("image/jpeg", 0.98);
+  a.click();
+}
+
+async function downloadAllExtractedWaybills(){
+  if(!extractedPdfWaybills.length){
+    alert("Mag-upload muna ng PDF.");
+    return;
+  }
+
+  if(hasUnconfirmedAddress()){
+    renderPdfPreviewTable();
+    alert("May address na REVIEW / below 100%. Kapag may only 1-2 letters tulad ng 'Fe', kailangan ayusin muna ang Barangay / City / Province / ZIP bago mag DOWNLOAD ALL para iwas return.");
+    setBulkPdfStatus("May address na kailangan i-review muna bago bulk download.");
+    return;
+  }
+
+  bulkDownloadStopRequested = false;
+  bulkDownloadRunning = true;
+  setStopDownloadEnabled(true);
+
+  setBulkPdfStatus("Downloading all " + extractedPdfWaybills.length + " waybill(s)...");
+  let downloadedCount = 0;
+
+  try{
+    for(let i=0; i<extractedPdfWaybills.length; i++){
+      if(bulkDownloadStopRequested){
+        setBulkPdfStatus("Download stopped. Natapos: " + downloadedCount + " of " + extractedPdfWaybills.length + ".");
+        break;
+      }
+
+      setBulkPdfStatus("Downloading " + (i+1) + " of " + extractedPdfWaybills.length + "... Click STOP DOWNLOAD para ihinto.");
+      await downloadOneExtractedWaybill(extractedPdfWaybills[i], i);
+      downloadedCount++;
+      await waitMs(500);
+    }
+
+    if(!bulkDownloadStopRequested){
+      setBulkPdfStatus("Done downloading all waybills.");
+    }
+  }finally{
+    bulkDownloadRunning = false;
+    bulkDownloadStopRequested = false;
+    setStopDownloadEnabled(false);
+  }
+}
+// ============================================================
+
+</script>
+
+<script>(function(){try{document.body.classList.remove("login-locked");sessionStorage.setItem("waybillLoginOK","yes");}catch(e){}})();</script>
+
+<script>
+(function(){
+  function showOnlineOnlyLock(message){
+    if(document.getElementById("onlineOnlyLock")) return;
+    var div = document.createElement("div");
+    div.id = "onlineOnlyLock";
+    div.className = "onlineOnlyLock";
+    div.innerHTML = '<div class="onlineOnlyLockBox"><h2>Online Login Required</h2><p>' +
+      (message || "You must be online and logged in to use the editor.") +
+      '</p><button type="button" onclick="location.href=\'/login\'">LOGIN AGAIN</button></div>';
+    document.body.appendChild(div);
+  }
+
+  async function verifyOnlineSession(){
+    if(location.protocol === "file:"){
+      showOnlineOnlyLock("The saved page cannot be used offline. Open the official website and log in.");
+      return false;
+    }
+
+    try{
+      var res = await fetch("/.netlify/functions/auth-check?ts=" + Date.now(), {
+        method:"GET",
+        cache:"no-store",
+        credentials:"same-origin"
+      });
+      if(!res.ok) throw new Error("not logged in");
+      var json = await res.json();
+      if(!json.ok) throw new Error("not logged in");
+      return true;
+    }catch(e){
+      showOnlineOnlyLock("Session could not be verified. You must be online and logged in to the official website.");
+      return false;
+    }
+  }
+
+  document.addEventListener("keydown", function(e){
+    var key = String(e.key || "").toLowerCase();
+    if((e.ctrlKey || e.metaKey) && key === "s"){
+      e.preventDefault();
+      e.stopPropagation();
+      alert("Save page is disabled. You must use the official website online.");
+      return false;
+    }
+  }, true);
+
+  document.addEventListener("contextmenu", function(e){
+    e.preventDefault();
+  }, true);
+
+  window.addEventListener("pageshow", verifyOnlineSession);
+  setInterval(verifyOnlineSession, 30000);
+})();
+</script>
+
+
+<script>
+(function(){
+  function cleanSellerTextFix(s){
+    return String(s || "").replace(/\u0000/g, " ").replace(/\s+/g, " ").replace(/\s*,\s*/g, ", ").trim();
+  }
+
+  function pickSellerCityProvinceArea(fullText){
+    const text = cleanSellerTextFix(fullText);
+    const lower = text.toLowerCase();
+
+    const knownCities = [
+      "Paranaque City","Parañaque City","Manila","Quezon City","Caloocan City","Makati City",
+      "Pasay City","Taguig City","Mandaluyong City","Pasig City","Marikina City","Muntinlupa City",
+      "Las Pinas City","Las Piñas City","Valenzuela City","Malabon City","Navotas City",
+      "San Juan City","Baliuag","San Jose del Monte City","Meycauayan City","Malolos City",
+      "Calumpit","Pulilan","Plaridel","Guiguinto","Bocaue","Santa Maria","Marilao"
+    ];
+
+    const knownProvinces = [
+      "Metro Manila","NCR","Bulacan","Pampanga","Cavite","Laguna","Rizal","Batangas",
+      "Pangasinan","Tarlac","Nueva Ecija","Bataan","Zambales","Quezon","Cebu","Davao"
+    ];
+
+    let city = "";
+    let province = "";
+
+    for(const c of knownCities){
+      if(lower.includes(c.toLowerCase())){
+        city = c.replace("Parañaque", "Paranaque").replace("Las Piñas", "Las Pinas");
+        break;
+      }
+    }
+
+    for(const p of knownProvinces){
+      if(lower.includes(p.toLowerCase())){
+        province = p === "NCR" ? "Metro Manila" : p;
+        break;
+      }
+    }
+
+    let area = "";
+    const areaPatterns = [
+      /\b(?:Barangay|Brgy\.?|Bgy\.?)\s*([A-Za-z0-9Ññ .\-\/]+?)(?=\s+(?:Tondo|Manila|NCR|Metro Manila|Paranaque|Parañaque|City|Philippines|\d{4})\b|,|$)/i,
+      /\b(Barangay\s*\d+\s*[A-Za-z .\/-]*)(?=\s+(?:I\/II|I|II|III|Manila|NCR|Metro Manila|Philippines|\d{4})\b|,|$)/i,
+      /\b(Brgy\.?\s*\d+\s*[A-Za-z .\/-]*)(?=\s+(?:I\/II|I|II|III|Manila|NCR|Metro Manila|Philippines|\d{4})\b|,|$)/i
+    ];
+
+    for(const p of areaPatterns){
+      const m = text.match(p);
+      if(m){
+        area = cleanSellerTextFix(m[1] || m[0]).replace(/^Brgy\.?\s*/i, "Barangay ").replace(/^Bgy\.?\s*/i, "Barangay ");
+        break;
+      }
+    }
+
+    if(area && /^\d+$/.test(area) && /\bTondo\b/i.test(text)){
+      area = "Barangay " + area + " Tondo";
+    }else if(area && /^Barangay\s+\d+$/i.test(area) && /\bTondo\b/i.test(text)){
+      area = area + " Tondo";
+    }
+
+    if(/\bBaclaran\b/i.test(text)){
+      area = "Baclaran";
+      if(!city) city = "Paranaque City";
+      if(!province) province = "Metro Manila";
+    }
+
+    let zip = "";
+    const z = text.match(/\b(1\d{3}|2\d{3}|3\d{3}|4\d{3}|5\d{3}|6\d{3}|7\d{3}|8\d{3}|9\d{3})\b(?!.*\b\d{4}\b)/);
+    if(z) zip = z[1];
+
+    return { city, area, province, region: province === "Metro Manila" ? "Metro Manila" : (province ? "Philippines" : ""), zip };
+  }
+
+  window.fixSellerLocationFromCurrentText = function(){
+    const sellerLine = document.getElementById("p_sellerLine1");
+    const sellerName = document.getElementById("p_sellerName");
+    const text = cleanSellerTextFix((sellerName ? sellerName.textContent : "") + " " + (sellerLine ? sellerLine.textContent : ""));
+    const loc = pickSellerCityProvinceArea(text);
+
+    if(loc.city && document.getElementById("p_sellerCity")) document.getElementById("p_sellerCity").textContent = loc.city;
+    if(loc.area && document.getElementById("p_sellerArea")) document.getElementById("p_sellerArea").textContent = loc.area;
+    if(loc.province && document.getElementById("p_sellerProvince")) document.getElementById("p_sellerProvince").textContent = loc.province;
+    if(loc.region && document.getElementById("p_sellerRegion")) document.getElementById("p_sellerRegion").textContent = loc.region;
+    if(loc.zip && document.getElementById("p_sellerZip")) document.getElementById("p_sellerZip").textContent = loc.zip;
+  };
+
+  const oldProcessPdfOnBackend = window.processPdfOnBackend;
+  if(typeof oldProcessPdfOnBackend === "function"){
+    window.processPdfOnBackend = async function(){
+      const r = await oldProcessPdfOnBackend.apply(this, arguments);
+      setTimeout(window.fixSellerLocationFromCurrentText, 150);
+      return r;
+    };
+  }
+
+  const oldApplySelectedPdfWaybill = window.applySelectedPdfWaybill;
+  if(typeof oldApplySelectedPdfWaybill === "function"){
+    window.applySelectedPdfWaybill = function(){
+      const r = oldApplySelectedPdfWaybill.apply(this, arguments);
+      setTimeout(window.fixSellerLocationFromCurrentText, 150);
+      return r;
+    };
+  }
+
+  const oldApplyWaybillData = window.applyWaybillData;
+  if(typeof oldApplyWaybillData === "function"){
+    window.applyWaybillData = function(){
+      const r = oldApplyWaybillData.apply(this, arguments);
+      setTimeout(window.fixSellerLocationFromCurrentText, 150);
+      return r;
+    };
+  }
+
+  document.addEventListener("input", function(e){
+    if(e.target && (e.target.id === "p_sellerLine1" || e.target.id === "p_sellerName")){
+      setTimeout(window.fixSellerLocationFromCurrentText, 100);
+    }
+  });
+})();
+</script>
+
+
+<script>
+(function(){
+  function cleanExactSeller(s){
+    return String(s || "")
+      .replace(/\u0000/g, " ")
+      .replace(/\s+/g, " ")
+      .replace(/\s*,\s*/g, ", ")
+      .replace(/\s+\/\s+/g, "/")
+      .trim();
+  }
+
+  function detectExactSellerParts(rawText){
+    const text = cleanExactSeller(rawText);
+    const lower = text.toLowerCase();
+
+    let phone = "";
+    const phoneMatch = text.match(/\b(?:\+?63|0)9\d{9}\b/);
+    if(phoneMatch) phone = phoneMatch[0];
+
+    let zip = "";
+    const zipMatch = text.match(/\b(1\d{3}|2\d{3}|3\d{3}|4\d{3}|5\d{3}|6\d{3}|7\d{3}|8\d{3}|9\d{3})\b(?!.*\b\d{4}\b)/);
+    if(zipMatch) zip = zipMatch[1];
+
+    let city = "";
+    let area = "";
+    let province = "";
+    let region = "Philippines";
+
+    if(/\bmetro\s+manila\b/i.test(text) || /\bNCR\b/i.test(text)){
+      province = "Metro Manila";
+    }
+
+    if(/\bparanaque\b|\bparañaque\b/i.test(text)){
+      city = "Paranaque City";
+      province = province || "Metro Manila";
+    }else if(/\bmanila\b/i.test(text)){
+      city = "Manila";
+      province = province || "Metro Manila";
+    }else if(/\bquezon\s+city\b/i.test(text)){
+      city = "Quezon City";
+      province = province || "Metro Manila";
+    }else if(/\bpasay\b/i.test(text)){
+      city = "Pasay City";
+      province = province || "Metro Manila";
+    }else if(/\btaguig\b/i.test(text)){
+      city = "Taguig City";
+      province = province || "Metro Manila";
+    }else if(/\bmakati\b/i.test(text)){
+      city = "Makati City";
+      province = province || "Metro Manila";
+    }
+
+    const barangayFull = text.match(/\bBarangay\s*(\d+)\s*([A-Za-z .\/-]*?)(?=\s+(?:I\/II|I|II|III|Manila|NCR|Metro Manila|Philippines|\d{4})\b|,|$)/i);
+    const brgyShort = text.match(/\bBrgy\.?\s*(\d+)\s*,?\s*([A-Za-z .\/-]*?)(?=\s*,?\s*(?:Manila|NCR|Metro Manila|Philippines|\d{4})\b|$)/i);
+
+    if(barangayFull){
+      const num = barangayFull[1];
+      let place = cleanExactSeller(barangayFull[2] || "");
+      place = place.replace(/\b(?:I\/II|I|II|III)\b/gi, "").trim();
+      if(!place && /\bTondo\b/i.test(text)) place = "Tondo";
+      area = cleanExactSeller("Barangay " + num + (place ? " " + place : ""));
+    }else if(brgyShort){
+      const num = brgyShort[1];
+      let place = cleanExactSeller(brgyShort[2] || "");
+      place = place.replace(/\b(?:Manila|NCR|Metro Manila|Philippines)\b/gi, "").trim();
+      if(!place && /\bTondo\b/i.test(text)) place = "Tondo";
+      area = cleanExactSeller("Barangay " + num + (place ? " " + place : ""));
+    }
+
+    if(/\bBaclaran\b/i.test(text)){
+      area = "Baclaran";
+      city = city || "Paranaque City";
+      province = province || "Metro Manila";
+    }
+
+    let name = text;
+    if(phone){
+      name = cleanExactSeller(text.slice(0, text.indexOf(phone)));
+    }
+    name = name.replace(/\bSELLER\b/ig, "").trim();
+
+    let address = text;
+    if(name) address = address.replace(name, "");
+    if(phone) address = address.replace(phone, "");
+    address = address
+      .replace(/\bBarangay\s*\d+\s*[A-Za-z .\/-]*?(?=\s+(?:I\/II|I|II|III|Manila|NCR|Metro Manila|Philippines|\d{4})\b|,|$)/ig, "")
+      .replace(/\bBrgy\.?\s*\d+\s*,?\s*[A-Za-z .\/-]*?(?=\s*,?\s*(?:Manila|NCR|Metro Manila|Philippines|\d{4})\b|$)/ig, "")
+      .replace(/\b(?:Manila|Paranaque City|Parañaque City|NCR|Metro Manila|Philippines)\b/ig, "")
+      .replace(/\b\d{4}\b/g, "")
+      .replace(/\bI\/II\b/ig, "")
+      .replace(/\s*,\s*,/g, ",")
+      .replace(/^,\s*|\s*,$/g, "");
+    address = cleanExactSeller(address);
+
+    if(!address && area === "Baclaran") address = "Baclaran";
+
+    return {
+      name: cleanExactSeller([name, phone].filter(Boolean).join(" ")),
+      address,
+      city,
+      area,
+      province,
+      region,
+      zip
+    };
+  }
+
+  window.applyExactSellerLocationFix = function(){
+    const sellerNameEl = document.getElementById("p_sellerName");
+    const sellerLineEl = document.getElementById("p_sellerLine1");
+    const rawText = cleanExactSeller(
+      (sellerNameEl ? sellerNameEl.textContent : "") + " " +
+      (sellerLineEl ? sellerLineEl.textContent : "") + " " +
+      (document.getElementById("p_sellerCity") ? document.getElementById("p_sellerCity").textContent : "") + " " +
+      (document.getElementById("p_sellerArea") ? document.getElementById("p_sellerArea").textContent : "") + " " +
+      (document.getElementById("p_sellerProvince") ? document.getElementById("p_sellerProvince").textContent : "") + " " +
+      (document.getElementById("p_sellerRegion") ? document.getElementById("p_sellerRegion").textContent : "") + " " +
+      (document.getElementById("p_sellerZip") ? document.getElementById("p_sellerZip").textContent : "")
+    );
+
+    const p = detectExactSellerParts(rawText);
+
+    if(p.name && sellerNameEl) sellerNameEl.textContent = p.name;
+    if(sellerLineEl) sellerLineEl.textContent = p.address || "";
+    if(p.city && document.getElementById("p_sellerCity")) document.getElementById("p_sellerCity").textContent = p.city;
+    if(p.area && document.getElementById("p_sellerArea")) document.getElementById("p_sellerArea").textContent = p.area;
+    if(p.province && document.getElementById("p_sellerProvince")) document.getElementById("p_sellerProvince").textContent = p.province;
+    if(p.region && document.getElementById("p_sellerRegion")) document.getElementById("p_sellerRegion").textContent = p.region;
+    if(p.zip && document.getElementById("p_sellerZip")) document.getElementById("p_sellerZip").textContent = p.zip;
+  };
+
+  function runExactSellerFixSoon(){
+    setTimeout(window.applyExactSellerLocationFix, 120);
+    setTimeout(window.applyExactSellerLocationFix, 350);
+  }
+
+  const oldApplyWaybillData2 = window.applyWaybillData;
+  if(typeof oldApplyWaybillData2 === "function"){
+    window.applyWaybillData = function(){
+      const r = oldApplyWaybillData2.apply(this, arguments);
+      runExactSellerFixSoon();
+      return r;
+    };
+  }
+
+  const oldApplySelectedPdfWaybill2 = window.applySelectedPdfWaybill;
+  if(typeof oldApplySelectedPdfWaybill2 === "function"){
+    window.applySelectedPdfWaybill = function(){
+      const r = oldApplySelectedPdfWaybill2.apply(this, arguments);
+      runExactSellerFixSoon();
+      return r;
+    };
+  }
+
+  const oldProcessPdfOnBackend2 = window.processPdfOnBackend;
+  if(typeof oldProcessPdfOnBackend2 === "function"){
+    window.processPdfOnBackend = async function(){
+      const r = await oldProcessPdfOnBackend2.apply(this, arguments);
+      runExactSellerFixSoon();
+      return r;
+    };
+  }
+
+  document.addEventListener("input", function(e){
+    if(e.target && /^p_seller/.test(e.target.id || "")){
+      runExactSellerFixSoon();
+    }
+  });
+})();
+</script>
+
+
+<script>
+(function(){
+  function cleanSellerAuto(s){
+    return String(s || "").replace(/\s+/g, " ").trim();
+  }
+
+  function extractLastZip(s){
+    const m = String(s || "").match(/\b(\d{4})\b(?!.*\b\d{4}\b)/);
+    return m ? m[1] : "";
+  }
+
+  window.applySellerCityAddressZipFix = function(){
+    const sellerNameEl = document.getElementById("p_sellerName");
+    const sellerLineEl = document.getElementById("p_sellerLine1");
+    const cityEl = document.getElementById("p_sellerCity");
+    const areaEl = document.getElementById("p_sellerArea");
+    const provinceEl = document.getElementById("p_sellerProvince");
+    const regionEl = document.getElementById("p_sellerRegion");
+    const zipEl = document.getElementById("p_sellerZip");
+
+    const text = cleanSellerAuto([
+      sellerNameEl?.textContent || "",
+      sellerLineEl?.textContent || "",
+      cityEl?.textContent || "",
+      areaEl?.textContent || "",
+      provinceEl?.textContent || "",
+      regionEl?.textContent || "",
+      zipEl?.textContent || ""
+    ].join(" "));
+
+    const zip = extractLastZip(text);
+    if(zip && zipEl) zipEl.textContent = zip;
+
+    if(/\bBaclaran\b/i.test(text)){
+      if(cityEl) cityEl.textContent = "Paranaque City";
+      if(areaEl) areaEl.textContent = "Baclaran";
+      if(provinceEl) provinceEl.textContent = "Metro Manila";
+      if(regionEl) regionEl.textContent = "Philippines";
+      return;
+    }
+
+    if(/\bTondo\b/i.test(text)){
+      if(cityEl) cityEl.textContent = "Tondo";
+      const brgy = text.match(/\b(?:Barangay|Brgy\.?|Bgy\.?)\s*(\d+)\b/i);
+      if(brgy && areaEl) areaEl.textContent = "Barangay " + brgy[1];
+      if(provinceEl) provinceEl.textContent = "Metro Manila";
+      if(regionEl) regionEl.textContent = "Philippines";
+      return;
+    }
+
+    if(/\bParanaque\b|\bParañaque\b/i.test(text)){
+      if(cityEl) cityEl.textContent = "Paranaque City";
+      if(provinceEl) provinceEl.textContent = "Metro Manila";
+      if(regionEl) regionEl.textContent = "Philippines";
+    }
+  };
+
+  function runSellerCityAddressZipFixSoon(){
+    setTimeout(window.applySellerCityAddressZipFix, 150);
+    setTimeout(window.applySellerCityAddressZipFix, 500);
+  }
+
+  const oldPSGCSeller = window.applyPSGCToSeller;
+  if(typeof oldPSGCSeller === "function"){
+    window.applyPSGCToSeller = function(){
+      const r = oldPSGCSeller.apply(this, arguments);
+      runSellerCityAddressZipFixSoon();
+      return r;
+    };
+  }
+
+  const oldApplyWaybillData = window.applyWaybillData;
+  if(typeof oldApplyWaybillData === "function"){
+    window.applyWaybillData = function(){
+      const r = oldApplyWaybillData.apply(this, arguments);
+      runSellerCityAddressZipFixSoon();
+      return r;
+    };
+  }
+
+  const oldApplySelectedPdfWaybill = window.applySelectedPdfWaybill;
+  if(typeof oldApplySelectedPdfWaybill === "function"){
+    window.applySelectedPdfWaybill = function(){
+      const r = oldApplySelectedPdfWaybill.apply(this, arguments);
+      runSellerCityAddressZipFixSoon();
+      return r;
+    };
+  }
+
+  document.addEventListener("input", function(e){
+    if(e.target && /^p_seller/.test(e.target.id || "")){
+      runSellerCityAddressZipFixSoon();
+    }
+  });
+})();
+</script>
+
+
+<script>
+(function(){
+  function cleanAddressAreaText(value){
+    let s = String(value || "").replace(/\s+/g, " ").trim();
+
+    // Remove house/street/noise that should not be inside Barangay/Area field.
+    // TINANGGAL ANG "Rizal" SA MGA FILTER LIST SA IBABA PARA HINDI NA BURAHIN.
+    s = s
+      .replace(/\([^)]*\)/g, " ")
+      .replace(/\b(?:Near|Beside|Behind|Back of|In front of|Front of|Landmark)\b.*$/i, " ")
+      .replace(/\b(?:No\.?|#)\s*\d+[A-Za-z]?\b[,\s-]*/gi, " ")
+      .replace(/\b\d+\s+(?:T\.?\s*)?(?:Passion|Pasion|Main|National|Mabini|Quezon|Bonifacio|Del Pilar|Purok|Sitio)\s+(?:Street|St\.?|Road|Rd\.?|Avenue|Ave\.?)\b.*$/i, " ")
+      .replace(/\b(?:Street|St\.?|Road|Rd\.?|Avenue|Ave\.?|Highway|Hwy\.?|Drive|Dr\.?|Lane|Ln\.?)\b.*$/i, " ")
+      .replace(/\b(?:Philippines|PH)\b/gi, " ")
+      .replace(/\b(?:Ilocos Norte|Metro Manila|NCR|Bulacan|Pampanga|Cavite|Laguna|Pangasinan)\b/gi, " ")
+      .replace(/\b(?:Laoag City|Paranaque City|Manila|Tondo)\b/gi, " ")
+      .replace(/^[,\s.-]+|[,\s.-]+$/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+
+    // If it still contains "Barangay 19" or "Bgy. No. 19", keep only official barangay phrase.
+    const brgyNo = String(value || "").match(/\b(?:Barangay|Brgy\.?|Bgy\.?)\s*(?:No\.?\s*)?(\d+[A-Za-z]?)\b/i);
+    if(brgyNo) return "Barangay " + brgyNo[1];
+
+    return s;
+  }
+
+  function extractBuyerBarangayOnlyFromText(text){
+    text = String(text || "").replace(/\s+/g, " ").trim();
+
+    // Prefer explicit Barangay / Bgy / Brgy number.
+    const bgyNo = text.match(/\b(?:Barangay|Brgy\.?|Bgy\.?)\s*(?:No\.?\s*)?(\d+[A-Za-z]?)\b/i);
+    if(bgyNo) return "Barangay " + bgyNo[1];
+
+    // Prefer named barangay after "Barangay".
+    const named = text.match(/\b(?:Barangay|Brgy\.?|Bgy\.?)\s*([A-Za-z0-9Ññ .-]+?)(?=\s+(?:Laoag City|City|Municipality|Province|Ilocos Norte|Philippines|Near|\(|\d{4})\b|,|$)/i);
+    if(named) return cleanAddressAreaText(named[1]);
+
+    return "";
+  }
+
+  window.cleanBuyerAreaField = function(){
+    const lineEl = document.getElementById("p_buyerLine1");
+    const cityEl = document.getElementById("p_buyerCity");
+    const areaEl = document.getElementById("p_buyerArea");
+    const provinceEl = document.getElementById("p_buyerProvince");
+    const regionEl = document.getElementById("p_buyerRegion");
+
+    const fullText = [
+      lineEl?.textContent || "",
+      cityEl?.textContent || "",
+      areaEl?.textContent || "",
+      provinceEl?.textContent || "",
+      regionEl?.textContent || ""
+    ].join(" ");
+
+    const santaMarcela = /\bSanta\s+Marcela\b/i.test(fullText) ? "Santa Marcela" : "";
+    const exactBarangay = santaMarcela || extractBuyerBarangayOnlyFromText(fullText);
+    if(areaEl){
+      areaEl.textContent = exactBarangay || cleanAddressAreaText(areaEl.textContent);
+    }
+
+    if(/\bLaoag City\b/i.test(fullText) && cityEl) cityEl.textContent = "Laoag City";
+    if(/\bIlocos Norte\b/i.test(fullText) && provinceEl) provinceEl.textContent = "Ilocos Norte";
+    if(/\bIlocos Norte\b/i.test(fullText) && regionEl) regionEl.textContent = "Philippines";
+  };
+
+  function runBuyerAreaCleanSoon(){
+    setTimeout(window.cleanBuyerAreaField, 120);
+    setTimeout(window.cleanBuyerAreaField, 450);
+  }
+
+  const oldApplyPSGCToBuyer = window.applyPSGCToBuyer;
+  if(typeof oldApplyPSGCToBuyer === "function"){
+    window.applyPSGCToBuyer = function(){
+      const r = oldApplyPSGCToBuyer.apply(this, arguments);
+      runBuyerAreaCleanSoon();
+      return r;
+    };
+  }
+
+  const oldApplyWaybillData = window.applyWaybillData;
+  if(typeof oldApplyWaybillData === "function"){
+    window.applyWaybillData = function(){
+      const r = oldApplyWaybillData.apply(this, arguments);
+      runBuyerAreaCleanSoon();
+      return r;
+    };
+  }
+
+  const oldApplySelectedPdfWaybill = window.applySelectedPdfWaybill;
+  if(typeof oldApplySelectedPdfWaybill === "function"){
+    window.applySelectedPdfWaybill = function(){
+      const r = oldApplySelectedPdfWaybill.apply(this, arguments);
+      runBuyerAreaCleanSoon();
+      return r;
+    };
+  }
+
+  document.addEventListener("input", function(e){
+    if(e.target && /^p_buyer/.test(e.target.id || "")){
+      runBuyerAreaCleanSoon();
+    }
+  });
+})();
+</script>
+
+
+<script>
+(function(){
+  function cleanSantaMarcelaText(s){
+    return String(s || "")
+      .replace(/\([^)]*\)/g, " ")
+      .replace(/\s+/g, " ")
+      .replace(/^[,\s.-]+|[,\s.-]+$/g, "")
+      .trim();
+  }
+
+  function extractSantaMarcelaArea(text){
+    text = String(text || "");
+    const m = text.match(/\bSanta\s+Marcela\b/i);
+    if(m) return "Santa Marcela";
+    return "";
+  }
+
+  window.fixBuyerSantaMarcelaBarangay = function(){
+    const lineEl = document.getElementById("p_buyerLine1");
+    const cityEl = document.getElementById("p_buyerCity");
+    const areaEl = document.getElementById("p_buyerArea");
+    const provinceEl = document.getElementById("p_buyerProvince");
+    const regionEl = document.getElementById("p_buyerRegion");
+
+    const fullText = cleanSantaMarcelaText([
+      lineEl?.textContent || "",
+      cityEl?.textContent || "",
+      areaEl?.textContent || "",
+      provinceEl?.textContent || "",
+      regionEl?.textContent || ""
+    ].join(" "));
+
+    const santa = extractSantaMarcelaArea(fullText);
+    if(santa && areaEl) areaEl.textContent = santa;
+
+    if(/\bLaoag City\b/i.test(fullText) && cityEl) cityEl.textContent = "Laoag City";
+    if(/\bIlocos Norte\b/i.test(fullText) && provinceEl) provinceEl.textContent = "Ilocos Norte";
+    if(/\bIlocos Norte\b/i.test(fullText) && regionEl) regionEl.textContent = "Philippines";
+  };
+
+  function runSantaMarcelaFixSoon(){
+    setTimeout(window.fixBuyerSantaMarcelaBarangay, 130);
+    setTimeout(window.fixBuyerSantaMarcelaBarangay, 480);
+  }
+
+  const oldCleanBuyerAreaField = window.cleanBuyerAreaField;
+  if(typeof oldCleanBuyerAreaField === "function"){
+    window.cleanBuyerAreaField = function(){
+      const r = oldCleanBuyerAreaField.apply(this, arguments);
+      runSantaMarcelaFixSoon();
+      return r;
+    };
+  }
+
+  const oldApplyPSGCToBuyer = window.applyPSGCToBuyer;
+  if(typeof oldApplyPSGCToBuyer === "function"){
+    window.applyPSGCToBuyer = function(){
+      const r = oldApplyPSGCToBuyer.apply(this, arguments);
+      runSantaMarcelaFixSoon();
+      return r;
+    };
+  }
+
+  const oldApplyWaybillData = window.applyWaybillData;
+  if(typeof oldApplyWaybillData === "function"){
+    window.applyWaybillData = function(){
+      const r = oldApplyWaybillData.apply(this, arguments);
+      runSantaMarcelaFixSoon();
+      return r;
+    };
+  }
+});

