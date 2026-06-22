@@ -5029,7 +5029,7 @@ async function downloadAllExtractedWaybills(){
     let s = String(value || "").replace(/\s+/g, " ").trim();
 
     // Remove house/street/noise that should not be inside Barangay/Area field.
-    // TINANGGAL ANG "Rizal" SA MGA FILTER LIST SA IBABA PARA HINDI NA BURAHIN.
+    // TINANGGAL NA ANG "Rizal" SA MGA FILTER DITO KAYA HINDI NA ITO BUBURAHIN.
     s = s
       .replace(/\([^)]*\)/g, " ")
       .replace(/\b(?:Near|Beside|Behind|Back of|In front of|Front of|Landmark)\b.*$/i, " ")
